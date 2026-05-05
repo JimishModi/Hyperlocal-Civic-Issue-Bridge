@@ -6,8 +6,6 @@ from groq import Groq
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-client = Groq(api_key=os.environ.get("GROQ_API_KEY", ""))
-
 router = APIRouter()
 
 _prompt = (Path(__file__).parent.parent / "prompts" / "complaint_drafter.txt").read_text()
@@ -16,13 +14,15 @@ _ward = json.loads(
 )
 _dept_map = {d["category"]: d for d in _ward["departments"]}
 
+_client = Groq(api_key=os.environ.get("GROQ_API_KEY", ""))
+
 
 class DraftRequest(BaseModel):
     category: str
     department: str
     description: str
     location: str
-
+    image_url: str | None = None
 
 @router.post("/draft")
 async def draft(req: DraftRequest):
@@ -37,7 +37,7 @@ async def draft(req: DraftRequest):
         "Write the formal complaint letter."
     )
 
-    response = client.chat.completions.create(
+    response = _client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[
             {"role": "system", "content": _prompt},
@@ -48,7 +48,7 @@ async def draft(req: DraftRequest):
 
     try:
         raw = json.loads(response.choices[0].message.content)
-    except Exception:
+    except json.JSONDecodeError:
         raise HTTPException(status_code=500, detail="Draft generation error")
 
     return {
@@ -58,4 +58,5 @@ async def draft(req: DraftRequest):
         "category": req.category,
         "email": dept_info["email"],
         "portal_url": dept_info["portal"],
+        "image_url": req.image_url,
     }

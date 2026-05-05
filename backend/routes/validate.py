@@ -5,12 +5,11 @@ from pathlib import Path
 from groq import Groq
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
-client = Groq(api_key=os.environ.get("GROQ_API_KEY", ""))
-
 router = APIRouter()
 
 _prompt = (Path(__file__).parent.parent / "prompts" / "security_gate.txt").read_text()
 
+_client = Groq(api_key=os.environ.get("GROQ_API_KEY", ""))
 
 @router.post("/validate")
 async def validate(
@@ -23,7 +22,7 @@ async def validate(
     if latitude and longitude:
         user_content += f"\nLocation: {latitude:.4f}, {longitude:.4f}"
 
-    response = client.chat.completions.create(
+    response = _client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[
             {"role": "system", "content": _prompt},
@@ -34,7 +33,7 @@ async def validate(
 
     try:
         result = json.loads(response.choices[0].message.content)
-    except Exception:
+    except json.JSONDecodeError:
         raise HTTPException(status_code=500, detail="Validation service error")
 
     if result.get("status") == "reject":

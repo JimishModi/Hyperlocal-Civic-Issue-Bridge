@@ -1,4 +1,7 @@
-from fastapi import FastAPI
+import logging
+import traceback
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
@@ -38,3 +41,22 @@ def shutdown():
 @app.get("/")
 def health():
     return {"status": "ok"}
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logging.error(f"Unhandled server error: {exc}")
+    traceback.print_exc()
+    
+    # We explicitly add the CORS header so the frontend can read the 500 error
+    # instead of getting a generic CORS error masking the true issue.
+    origin = request.headers.get("origin")
+    headers = {}
+    if origin in ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5174", "http://127.0.0.1:5174", "http://localhost:5175"]:
+        headers["Access-Control-Allow-Origin"] = origin
+        headers["Access-Control-Allow-Credentials"] = "true"
+
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal Server Error", "error": str(exc)},
+        headers=headers
+    )

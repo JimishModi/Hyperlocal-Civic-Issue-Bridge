@@ -29,6 +29,7 @@ class FileRequest(BaseModel):
     email: str           # BMC department email
     description: str = ""
     user_email: str = "" # citizen's email — for CC + 14-day reminder
+    image_url: str | None = None
 
 
 def _generate_reference_code() -> str:
@@ -53,6 +54,7 @@ async def file_complaint(req: FileRequest):
             "draft_complaint": req.body,
             "status": "awaiting",
             "user_email": req.user_email or None,
+            "image_url": req.image_url,
         })
         .execute()
     )

@@ -45,6 +45,7 @@ export default function Draft() {
           category: draft.category,
           email: draft.email,
           user_email: userEmail,
+          image_url: draft.image_url,
         }),
       })
       const code = result.reference_code

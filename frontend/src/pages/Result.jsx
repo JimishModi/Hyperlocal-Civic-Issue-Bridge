@@ -44,6 +44,7 @@ export default function Result() {
           department: classification.department,
           description: classification.description,
           location: classification.location,
+          image_url: classification.image_url,
         }),
       })
       navigate('/draft', { state: { draft: draftResult } })

@@ -9,8 +9,6 @@ from pydantic import BaseModel
 
 from db import get_db
 
-client = Groq(api_key=os.environ.get("GROQ_API_KEY", ""))
-
 router = APIRouter()
 
 _bmc_prompt = (Path(__file__).parent.parent / "prompts" / "escalation.txt").read_text()
@@ -20,6 +18,8 @@ _ward = json.loads(
     (Path(__file__).parent.parent / "config" / "bmc_ward.json").read_text()
 )
 _dept_map = {d["category"]: d for d in _ward["departments"]}
+
+_client = Groq(api_key=os.environ.get("GROQ_API_KEY", ""))
 
 
 class EscalateRequest(BaseModel):
@@ -60,7 +60,7 @@ async def escalate(req: EscalateRequest):
             f"Ward: BMC S-Ward, Powai, Mumbai\n\n"
             "Generate the CPGRAMS complaint letter and filing guide."
         )
-        response = client.chat.completions.create(
+        response = _client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
                 {"role": "system", "content": _cpgrams_prompt},
@@ -70,7 +70,7 @@ async def escalate(req: EscalateRequest):
         )
         try:
             raw = json.loads(response.choices[0].message.content)
-        except Exception:
+        except json.JSONDecodeError:
             raise HTTPException(status_code=500, detail="CPGRAMS generation error")
 
         _save_escalation(db, grievance_res, "rti", raw.get("body", ""), days_elapsed)
@@ -113,7 +113,7 @@ async def escalate(req: EscalateRequest):
         "Write the escalation document."
     )
 
-    response = client.chat.completions.create(
+    response = _client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[
             {"role": "system", "content": _bmc_prompt},
@@ -123,7 +123,7 @@ async def escalate(req: EscalateRequest):
     )
     try:
         raw = json.loads(response.choices[0].message.content)
-    except Exception:
+    except json.JSONDecodeError:
         raise HTTPException(status_code=500, detail="Escalation generation error")
 
     _save_escalation(db, grievance_res, db_type, raw.get("body", ""), days_elapsed)
