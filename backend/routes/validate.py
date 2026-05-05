@@ -2,21 +2,14 @@ import json
 import os
 from pathlib import Path
 
-import google.generativeai as genai
+from groq import Groq
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
-genai.configure(api_key=os.environ.get("GEMINI_API_KEY", ""))
+client = Groq(api_key=os.environ.get("GROQ_API_KEY", ""))
 
 router = APIRouter()
 
 _prompt = (Path(__file__).parent.parent / "prompts" / "security_gate.txt").read_text()
-
-# Gemini 2.0 Flash — free tier, fast, sufficient for binary safe/reject gate
-_model = genai.GenerativeModel(
-    model_name="gemini-2.0-flash",
-    system_instruction=_prompt,
-    generation_config=genai.GenerationConfig(response_mime_type="application/json"),
-)
 
 
 @router.post("/validate")
@@ -30,11 +23,18 @@ async def validate(
     if latitude and longitude:
         user_content += f"\nLocation: {latitude:.4f}, {longitude:.4f}"
 
-    response = _model.generate_content(user_content)
+    response = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[
+            {"role": "system", "content": _prompt},
+            {"role": "user", "content": user_content}
+        ],
+        response_format={"type": "json_object"}
+    )
 
     try:
-        result = json.loads(response.text)
-    except json.JSONDecodeError:
+        result = json.loads(response.choices[0].message.content)
+    except Exception:
         raise HTTPException(status_code=500, detail="Validation service error")
 
     if result.get("status") == "reject":

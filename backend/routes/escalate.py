@@ -3,13 +3,13 @@ import os
 from datetime import date
 from pathlib import Path
 
-import google.generativeai as genai
+from groq import Groq
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from db import get_db
 
-genai.configure(api_key=os.environ.get("GEMINI_API_KEY", ""))
+client = Groq(api_key=os.environ.get("GROQ_API_KEY", ""))
 
 router = APIRouter()
 
@@ -20,20 +20,6 @@ _ward = json.loads(
     (Path(__file__).parent.parent / "config" / "bmc_ward.json").read_text()
 )
 _dept_map = {d["category"]: d for d in _ward["departments"]}
-
-_json_config = genai.GenerationConfig(response_mime_type="application/json")
-
-# Gemini 2.0 Flash — free tier, handles legal/formal document generation well
-_bmc_model = genai.GenerativeModel(
-    model_name="gemini-2.0-flash",
-    system_instruction=_bmc_prompt,
-    generation_config=_json_config,
-)
-_cpgrams_model = genai.GenerativeModel(
-    model_name="gemini-2.0-flash",
-    system_instruction=_cpgrams_prompt,
-    generation_config=_json_config,
-)
 
 
 class EscalateRequest(BaseModel):
@@ -74,10 +60,17 @@ async def escalate(req: EscalateRequest):
             f"Ward: BMC S-Ward, Powai, Mumbai\n\n"
             "Generate the CPGRAMS complaint letter and filing guide."
         )
-        response = _cpgrams_model.generate_content(user_message)
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": _cpgrams_prompt},
+                {"role": "user", "content": user_message}
+            ],
+            response_format={"type": "json_object"}
+        )
         try:
-            raw = json.loads(response.text)
-        except json.JSONDecodeError:
+            raw = json.loads(response.choices[0].message.content)
+        except Exception:
             raise HTTPException(status_code=500, detail="CPGRAMS generation error")
 
         _save_escalation(db, grievance_res, "rti", raw.get("body", ""), days_elapsed)
@@ -120,10 +113,17 @@ async def escalate(req: EscalateRequest):
         "Write the escalation document."
     )
 
-    response = _bmc_model.generate_content(user_message)
+    response = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[
+            {"role": "system", "content": _bmc_prompt},
+            {"role": "user", "content": user_message}
+        ],
+        response_format={"type": "json_object"}
+    )
     try:
-        raw = json.loads(response.text)
-    except json.JSONDecodeError:
+        raw = json.loads(response.choices[0].message.content)
+    except Exception:
         raise HTTPException(status_code=500, detail="Escalation generation error")
 
     _save_escalation(db, grievance_res, db_type, raw.get("body", ""), days_elapsed)

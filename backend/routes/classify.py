@@ -1,22 +1,16 @@
+import base64
 import json
 import os
 from pathlib import Path
 
-import google.generativeai as genai
+from groq import Groq
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
-genai.configure(api_key=os.environ.get("GEMINI_API_KEY", ""))
+client = Groq(api_key=os.environ.get("GROQ_API_KEY", ""))
 
 router = APIRouter()
 
 _prompt = (Path(__file__).parent.parent / "prompts" / "vision_classifier.txt").read_text()
-
-# Gemini 2.0 Flash — free tier, native multimodal, handles image + text together
-_model = genai.GenerativeModel(
-    model_name="gemini-2.0-flash",
-    system_instruction=_prompt,
-    generation_config=genai.GenerationConfig(response_mime_type="application/json"),
-)
 
 
 @router.post("/classify")
@@ -38,18 +32,30 @@ async def classify(
         "Classify this civic issue."
     )
 
-    parts = []
+    parts = [{"type": "text", "text": text_part}]
     if image:
         image_bytes = await image.read()
         media_type = image.content_type or "image/jpeg"
-        parts.append({"mime_type": media_type, "data": image_bytes})
-    parts.append(text_part)
+        base64_image = base64.b64encode(image_bytes).decode('utf-8')
+        parts.append({
+            "type": "image_url",
+            "image_url": {
+                "url": f"data:{media_type};base64,{base64_image}"
+            }
+        })
 
-    response = _model.generate_content(parts)
+    response = client.chat.completions.create(
+        model="llama-3.2-90b-vision-preview",
+        messages=[
+            {"role": "system", "content": _prompt},
+            {"role": "user", "content": parts}
+        ],
+        response_format={"type": "json_object"}
+    )
 
     try:
-        raw = json.loads(response.text)
-    except json.JSONDecodeError:
+        raw = json.loads(response.choices[0].message.content)
+    except Exception:
         raise HTTPException(status_code=500, detail="Classification service error")
 
     return {
