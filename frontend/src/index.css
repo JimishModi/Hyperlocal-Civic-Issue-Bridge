@@ -1,0 +1,153 @@
+/* ── Google Font: Inter ── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-background text-on-surface min-h-screen;
+  }
+}
+
+@layer components {
+  /* ── App shell: fixed max-width, centered ── */
+  .app-shell {
+    @apply mx-auto w-full max-w-app min-h-screen relative;
+  }
+
+  /* ── Page container with edge margins ── */
+  .page {
+    @apply px-edge py-6;
+  }
+
+  /* ── Primary button (Deep Navy) ── */
+  .btn-primary {
+    @apply w-full py-3.5 px-6 rounded-lg
+           bg-primary-container text-on-primary
+           font-semibold text-body-md
+           transition-all duration-200
+           active:scale-[0.98]
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    @apply bg-primary shadow-elevated;
+  }
+
+  /* ── Secondary button (Emerald Green) ── */
+  .btn-secondary {
+    @apply w-full py-3.5 px-6 rounded-lg
+           bg-accent-green text-white
+           font-semibold text-body-md
+           transition-all duration-200
+           active:scale-[0.98]
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* ── Ghost button ── */
+  .btn-ghost {
+    @apply w-full py-3.5 px-6 rounded-lg
+           bg-transparent text-accent-slate
+           font-semibold text-body-md
+           transition-all duration-200
+           active:scale-[0.98];
+  }
+
+  .btn-ghost:hover {
+    @apply bg-surface-container;
+  }
+
+  /* ── Card ── */
+  .card {
+    @apply bg-surface-container-lowest rounded-xl
+           border border-outline-variant
+           p-4;
+  }
+
+  .card-elevated {
+    @apply card shadow-card;
+  }
+
+  /* ── Input field ── */
+  .input-field {
+    @apply w-full min-h-[48px] px-4 py-3
+           bg-surface-container-low
+           border border-outline-variant rounded-lg
+           text-on-surface text-body-md
+           placeholder:text-accent-slate
+           transition-colors duration-200
+           focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container;
+  }
+
+  /* ── Status chips ── */
+  .chip {
+    @apply inline-flex items-center px-3 py-1
+           rounded-full text-label-sm font-medium;
+  }
+
+  .chip-success {
+    @apply chip bg-secondary-container/30 text-on-secondary-container;
+  }
+
+  .chip-warning {
+    @apply chip bg-amber-100 text-amber-800;
+  }
+
+  .chip-error {
+    @apply chip bg-error-container text-on-error-container;
+  }
+
+  .chip-info {
+    @apply chip bg-primary-fixed text-primary-container;
+  }
+}
+
+/* ── Smooth page transitions ── */
+.page-enter {
+  animation: slideIn 0.25s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Chat widget transitions ── */
+.chat-panel-enter {
+  animation: chatSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes chatSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Pulse animation for recording indicator ── */
+.pulse-recording {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.1); }
+}

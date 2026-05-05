@@ -1,0 +1,82 @@
+{
+  "city": "Mumbai",
+  "corporation": "Brihanmumbai Municipal Corporation (BMC)",
+  "ward": "S-Ward",
+  "area": "Powai",
+  "grievance_policy": "BMC Grievance Redressal Guidelines",
+  "response_window_days": 15,
+  "rti_officer": "Public Information Officer, BMC S-Ward Office",
+  "portal_url": "https://mcgm.gov.in/grievance",
+  "departments": [
+    {
+      "category": "Street Lighting",
+      "name": "BMC Electrical Department — S-Ward",
+      "email": "electrical.sward@mcgm.gov.in",
+      "portal": "https://mcgm.gov.in/grievance",
+      "keywords": ["streetlight", "light", "electrical", "power", "dark", "lamp"]
+    },
+    {
+      "category": "Road & Footpath",
+      "name": "BMC Roads Department — S-Ward",
+      "email": "roads.sward@mcgm.gov.in",
+      "portal": "https://mcgm.gov.in/grievance",
+      "keywords": ["road", "pothole", "footpath", "pavement", "crater", "tar", "asphalt"]
+    },
+    {
+      "category": "Garbage & Sanitation",
+      "name": "BMC Solid Waste Management — S-Ward",
+      "email": "swm.sward@mcgm.gov.in",
+      "portal": "https://mcgm.gov.in/grievance",
+      "keywords": ["garbage", "waste", "trash", "litter", "dumping", "sanitation", "sweeping"]
+    },
+    {
+      "category": "Water Supply",
+      "name": "BMC Hydraulic Engineering — S-Ward",
+      "email": "water.sward@mcgm.gov.in",
+      "portal": "https://mcgm.gov.in/grievance",
+      "keywords": ["water", "pipe", "leakage", "supply", "tap", "drinking", "pressure"]
+    },
+    {
+      "category": "Drainage & Sewage",
+      "name": "BMC Storm Water Drain — S-Ward",
+      "email": "drainage.sward@mcgm.gov.in",
+      "portal": "https://mcgm.gov.in/grievance",
+      "keywords": ["drain", "sewage", "overflow", "flood", "waterlogging", "nullah", "sewer"]
+    },
+    {
+      "category": "Illegal Construction",
+      "name": "BMC Building Proposals — S-Ward",
+      "email": "building.sward@mcgm.gov.in",
+      "portal": "https://mcgm.gov.in/grievance",
+      "keywords": ["construction", "illegal", "encroachment", "building", "demolition", "structure"]
+    },
+    {
+      "category": "Tree Fall / Pruning",
+      "name": "BMC Garden Department — S-Ward",
+      "email": "garden.sward@mcgm.gov.in",
+      "portal": "https://mcgm.gov.in/grievance",
+      "keywords": ["tree", "branch", "fallen", "pruning", "garden", "park", "overgrown"]
+    },
+    {
+      "category": "Noise Pollution",
+      "name": "BMC S-Ward Office — Environment Cell",
+      "email": "environment.sward@mcgm.gov.in",
+      "portal": "https://mcgm.gov.in/grievance",
+      "keywords": ["noise", "sound", "pollution", "loud", "music", "construction noise"]
+    },
+    {
+      "category": "Public Health",
+      "name": "BMC Health Department — S-Ward",
+      "email": "health.sward@mcgm.gov.in",
+      "portal": "https://mcgm.gov.in/grievance",
+      "keywords": ["health", "hospital", "mosquito", "stagnant", "disease", "hygiene", "vector"]
+    },
+    {
+      "category": "Other",
+      "name": "BMC S-Ward Office — General",
+      "email": "sward@mcgm.gov.in",
+      "portal": "https://mcgm.gov.in/grievance",
+      "keywords": []
+    }
+  ]
+}
