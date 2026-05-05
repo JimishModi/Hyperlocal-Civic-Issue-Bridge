@@ -8,6 +8,7 @@ The platform bridges the gap between citizens and local government by using AI t
 
 ## 🚀 Features
 
+*   **🔐 Secure Authentication:** Seamless and secure user login using Google OAuth via Supabase, with automatic citizen profile creation.
 *   **📸 Photo Evidence & Smart Classification:** Snap a photo to store securely in Supabase as evidence, and describe the issue using text or voice. Our advanced AI model instantly identifies the category, confidence score, and responsible BMC department.
 *   **🎙️ Multimodal Intake:** Describe the issue using text or your voice (powered by native Web Speech API).
 *   **📍 Automatic Geolocation:** Accurately pinpoints the issue using the browser's GPS API.
@@ -30,6 +31,7 @@ The platform bridges the gap between citizens and local government by using AI t
 *   **Styling:** Tailwind CSS 3 (Custom design system with precise tokens)
 *   **State Management:** React Hooks (`useState`, `useReducer`) — No Redux
 *   **Native APIs:** Web Speech API, Geolocation API, Camera access
+*   **Auth & Backend SDK:** `@supabase/supabase-js`
 
 ### Backend
 *   **Framework:** FastAPI (Python)
@@ -51,9 +53,9 @@ The platform bridges the gap between citizens and local government by using AI t
 │
 └── frontend/                 # React PWA
     ├── src/
-    │   ├── pages/            # React Routes (Intake, Result, Draft, Tracker, Escalation)
+    │   ├── pages/            # React Routes (Landing, Auth, Intake, Result, Draft, Tracker, Escalation)
     │   ├── components/       # Shared UI (ChatBot, VoiceInput, DraftEditor)
-    │   ├── config/           # API fetch wrapper
+    │   ├── config/           # API fetch wrapper & Supabase client
     │   └── index.css         # Tailwind directives & global component classes
     ├── public/               # PWA Manifest & Icons
     └── tailwind.config.js    # Design system tokens
@@ -102,6 +104,8 @@ npm install
 Create a `.env` file in the `frontend` directory:
 ```env
 VITE_API_BASE_URL=http://localhost:8000
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
 Run the Vite dev server:
