@@ -8,7 +8,7 @@ The platform bridges the gap between citizens and local government by using AI t
 
 ## 🚀 Features
 
-*   **📸 AI Image Classification:** Snap a photo of a pothole, broken streetlight, or garbage dump. The AI vision model instantly identifies the category, confidence score, and responsible BMC department.
+*   **📸 Photo Evidence & Smart Classification:** Snap a photo to store securely in Supabase as evidence, and describe the issue using text or voice. Our advanced AI model instantly identifies the category, confidence score, and responsible BMC department.
 *   **🎙️ Multimodal Intake:** Describe the issue using text or your voice (powered by native Web Speech API).
 *   **📍 Automatic Geolocation:** Accurately pinpoints the issue using the browser's GPS API.
 *   **✍️ Automated Complaint Drafting:** Generates a professional, legally-sound complaint draft pre-addressed to the specific BMC department's email.
@@ -33,8 +33,8 @@ The platform bridges the gap between citizens and local government by using AI t
 
 ### Backend
 *   **Framework:** FastAPI (Python)
-*   **Database:** Supabase (PostgreSQL)
-*   **AI Models:** Google Gemini (Vision & Text)
+*   **Database:** Supabase (PostgreSQL & Storage)
+*   **AI Models:** Groq (Llama 3.3 70B)
 *   **Email Delivery:** Postmark
 
 ---
@@ -66,7 +66,7 @@ The platform bridges the gap between citizens and local government by using AI t
 ### Prerequisites
 *   Node.js (v18+)
 *   Python (3.10+)
-*   API Keys: Gemini, Supabase, Postmark
+*   API Keys: Groq, Supabase, Postmark
 
 ### 1. Backend Setup
 
@@ -79,7 +79,7 @@ pip install -r requirements.txt
 
 Create a `.env` file in the `backend` directory (refer to `.env.example`):
 ```env
-GEMINI_API_KEY=your_key_here
+GROQ_API_KEY=your_key_here
 SUPABASE_URL=your_supabase_url
 SUPABASE_SERVICE_KEY=your_supabase_key
 POSTMARK_API_KEY=your_postmark_key

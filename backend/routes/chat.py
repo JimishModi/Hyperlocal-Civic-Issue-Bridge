@@ -2,21 +2,15 @@ import os
 from pathlib import Path
 from typing import Literal
 
-import google.generativeai as genai
+from groq import Groq
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-
-genai.configure(api_key=os.environ.get("GEMINI_API_KEY", ""))
 
 router = APIRouter()
 
 _prompt = (Path(__file__).parent.parent / "prompts" / "chatbot.txt").read_text()
 
-# Gemini 2.0 Flash — free tier, fast turn-around for chat responses
-_model = genai.GenerativeModel(
-    model_name="gemini-2.0-flash",
-    system_instruction=_prompt,
-)
+_client = Groq(api_key=os.environ.get("GROQ_API_KEY", ""))
 
 
 class Message(BaseModel):
@@ -33,16 +27,13 @@ async def chat(req: ChatRequest):
     if not req.messages:
         raise HTTPException(status_code=422, detail="No messages provided")
 
-    # Gemini uses "model" instead of "assistant"
-    history = [
-        {
-            "role": "model" if m.role == "assistant" else "user",
-            "parts": [m.content],
-        }
-        for m in req.messages[:-1]
-    ]
+    messages = [{"role": "system", "content": _prompt}]
+    for m in req.messages:
+        messages.append({"role": m.role, "content": m.content})
 
-    chat_session = _model.start_chat(history=history)
-    response = chat_session.send_message(req.messages[-1].content)
+    response = _client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=messages
+    )
 
-    return {"reply": response.text.strip()}
+    return {"reply": response.choices[0].message.content.strip()}

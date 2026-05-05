@@ -2,11 +2,9 @@ import json
 import os
 from pathlib import Path
 
-import google.generativeai as genai
+from groq import Groq
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-
-genai.configure(api_key=os.environ.get("GEMINI_API_KEY", ""))
 
 router = APIRouter()
 
@@ -16,12 +14,7 @@ _ward = json.loads(
 )
 _dept_map = {d["category"]: d for d in _ward["departments"]}
 
-# Gemini 2.0 Flash — free tier, strong enough for formal letter generation
-_model = genai.GenerativeModel(
-    model_name="gemini-2.0-flash",
-    system_instruction=_prompt,
-    generation_config=genai.GenerationConfig(response_mime_type="application/json"),
-)
+_client = Groq(api_key=os.environ.get("GROQ_API_KEY", ""))
 
 
 class DraftRequest(BaseModel):
@@ -29,7 +22,7 @@ class DraftRequest(BaseModel):
     department: str
     description: str
     location: str
-
+    image_url: str | None = None
 
 @router.post("/draft")
 async def draft(req: DraftRequest):
@@ -44,10 +37,17 @@ async def draft(req: DraftRequest):
         "Write the formal complaint letter."
     )
 
-    response = _model.generate_content(user_message)
+    response = _client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[
+            {"role": "system", "content": _prompt},
+            {"role": "user", "content": user_message}
+        ],
+        response_format={"type": "json_object"}
+    )
 
     try:
-        raw = json.loads(response.text)
+        raw = json.loads(response.choices[0].message.content)
     except json.JSONDecodeError:
         raise HTTPException(status_code=500, detail="Draft generation error")
 
@@ -58,4 +58,5 @@ async def draft(req: DraftRequest):
         "category": req.category,
         "email": dept_info["email"],
         "portal_url": dept_info["portal"],
+        "image_url": req.image_url,
     }
