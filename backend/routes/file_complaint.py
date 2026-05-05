@@ -9,6 +9,7 @@ from pydantic import BaseModel
 
 from db import get_db
 from services.mailer import send_complaint_to_bmc
+from utils.geo import find_nearby_duplicate
 
 router = APIRouter()
 
@@ -30,6 +31,8 @@ class FileRequest(BaseModel):
     description: str = ""
     user_email: str = "" # citizen's email — for CC + 14-day reminder
     image_url: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
 
 
 def _generate_reference_code() -> str:
@@ -39,6 +42,16 @@ def _generate_reference_code() -> str:
 @router.post("/file")
 async def file_complaint(req: FileRequest):
     db = get_db()
+
+    # Final duplicate guard (handles race conditions or users bypassing the warning)
+    if req.latitude and req.longitude:
+        dup = find_nearby_duplicate(db, req.category, req.latitude, req.longitude)
+        if dup:
+            raise HTTPException(
+                status_code=409,
+                detail=f"DUPLICATE:{dup['reference_code']}"
+            )
+
     code = _generate_reference_code()
     subject = req.subject or f"Civic Complaint: {req.category} — {WARD}, Powai"
 
@@ -54,7 +67,8 @@ async def file_complaint(req: FileRequest):
             "draft_complaint": req.body,
             "status": "awaiting",
             "user_email": req.user_email or None,
-            "image_url": req.image_url,
+            "latitude": req.latitude,
+            "longitude": req.longitude,
         })
         .execute()
     )

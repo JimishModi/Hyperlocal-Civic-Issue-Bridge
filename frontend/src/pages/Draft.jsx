@@ -8,9 +8,11 @@ export default function Draft() {
   const navigate = useNavigate()
 
   const draft = state?.draft
+  const coords = state?.coords
   const [body, setBody] = useState(draft?.body || '')
   const [filing, setFiling] = useState(false)
   const [error, setError] = useState(null)
+  const [duplicateRef, setDuplicateRef] = useState(null)
   const [userEmail, setUserEmail] = useState('')
   const [breakdown, setBreakdown] = useState(null)
 
@@ -46,13 +48,19 @@ export default function Draft() {
           email: draft.email,
           user_email: userEmail,
           image_url: draft.image_url,
+          latitude: coords?.lat ?? null,
+          longitude: coords?.lng ?? null,
         }),
       })
       const code = result.reference_code
       localStorage.setItem('civic_ref_code', code)
       setBreakdown(result.process_breakdown)
     } catch (err) {
-      setError(err.message)
+      if (err.message?.startsWith('DUPLICATE:')) {
+        setDuplicateRef(err.message.split(':')[1])
+      } else {
+        setError(err.message)
+      }
     } finally {
       setFiling(false)
     }
@@ -70,6 +78,21 @@ export default function Draft() {
       </div>
 
       <DraftEditor value={body} onChange={setBody} />
+
+      {duplicateRef && (
+        <div className="mb-4 p-4 rounded-xl bg-amber-50 border border-amber-200">
+          <p className="text-label-bold text-amber-900 mb-1">Already Reported</p>
+          <p className="text-label-sm text-amber-800 mb-3">
+            This issue is already filed (Ref: <strong>{duplicateRef}</strong>). Track it instead of filing again.
+          </p>
+          <button
+            className="btn-ghost text-sm py-1.5"
+            onClick={() => navigate('/tracker', { state: { reference_code: duplicateRef } })}
+          >
+            Track Existing →
+          </button>
+        </div>
+      )}
 
       {error && (
         <div className="mb-4 p-3 rounded-lg bg-error-container text-on-error-container text-label-sm">

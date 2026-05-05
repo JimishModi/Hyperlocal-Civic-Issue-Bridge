@@ -52,3 +52,18 @@ async def track(code: str):
         "days_since_filed": days_since,
         "escalations": escalations,
     }
+
+
+@router.patch("/track/{code}/resolve")
+async def resolve(code: str):
+    db = get_db()
+    result = (
+        db.table("grievances")
+        .update({"status": "resolved"})
+        .eq("reference_code", code.upper())
+        .neq("status", "resolved")
+        .execute()
+    )
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Complaint not found or already resolved")
+    return {"status": "resolved"}
