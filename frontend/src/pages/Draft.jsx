@@ -44,6 +44,14 @@ export default function Draft() {
   const handleFile = async (force = false) => {
     setError(null)
     setFiling(true)
+
+    // Determine filing method based on what the user clicked
+    const filingMethod =
+      emailClicked && portalClicked ? 'both'
+      : emailClicked ? 'email'
+      : portalClicked ? 'portal'
+      : 'direct'
+
     try {
       const result = await apiFetch('/file', {
         method: 'POST',
@@ -58,6 +66,7 @@ export default function Draft() {
           latitude: coords?.lat ?? null,
           longitude: coords?.lng ?? null,
           force,
+          filing_method: filingMethod,
         }),
       })
       const code = result.reference_code

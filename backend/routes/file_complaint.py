@@ -34,6 +34,7 @@ class FileRequest(BaseModel):
     latitude: float | None = None
     longitude: float | None = None
     force: bool = False
+    filing_method: str = "direct"  # "email" | "portal" | "both" | "direct"
 
 
 def _generate_reference_code() -> str:
@@ -70,6 +71,7 @@ async def file_complaint(req: FileRequest):
             "user_email": req.user_email or None,
             "latitude": req.latitude,
             "longitude": req.longitude,
+            "filing_method": req.filing_method,
         })
         .execute()
     )
