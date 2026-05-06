@@ -9,7 +9,7 @@ The platform bridges the gap between citizens and local government by using AI t
 ## 🚀 Features
 
 *   **🔐 Secure Authentication:** Seamless and secure user login using Google OAuth via Supabase, with automatic citizen profile creation.
-*   **📸 Photo Evidence & Smart Classification:** Snap a photo to store securely in Supabase as evidence, and describe the issue using text or voice. Our advanced AI model instantly identifies the category, confidence score, and responsible BMC department.
+*   **📸 Photo Evidence & Smart Classification:** Snap a photo and describe the issue using text or voice. When an image is provided, the AI visually analyzes it using a multimodal vision model to identify the issue category, confidence score, and responsible BMC department — even from a vague or empty description. Photos are also stored securely in Supabase as evidence.
 *   **🎙️ Multimodal Intake:** Describe the issue using text or your voice (powered by native Web Speech API).
 *   **📍 Automatic Geolocation:** Accurately pinpoints the issue using the browser's GPS API.
 *   **✍️ Automated Complaint Drafting:** Generates a professional, legally-sound complaint draft pre-addressed to the specific BMC department's email.
@@ -36,7 +36,7 @@ The platform bridges the gap between citizens and local government by using AI t
 ### Backend
 *   **Framework:** FastAPI (Python)
 *   **Database:** Supabase (PostgreSQL & Storage)
-*   **AI Models:** Groq (Llama 3.3 70B)
+*   **AI Models:** Groq — Llama 4 Scout (`meta-llama/llama-4-scout-17b-16e-instruct`) for multimodal vision + text classification; Llama 3.3 70B (`llama-3.3-70b-versatile`) for text-only tasks
 *   **Email Delivery:** Postmark
 
 ---
@@ -47,7 +47,7 @@ The platform bridges the gap between citizens and local government by using AI t
 ├── backend/                  # FastAPI Application
 │   ├── routes/               # API endpoints (classify, draft, file, track, escalate, chat)
 │   ├── services/             # Core logic (AI integration, mailer, scheduler)
-│   ├── prompts/              # System prompts for Gemini
+│   ├── prompts/              # System prompts for Groq AI models
 │   ├── main.py               # FastAPI entry point & CORS config
 │   └── requirements.txt      # Python dependencies
 │

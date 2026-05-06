@@ -15,6 +15,9 @@ _prompt = (Path(__file__).parent.parent / "prompts" / "vision_classifier.txt").r
 
 _client = AsyncGroq(api_key=os.environ.get("GROQ_API_KEY", ""))
 
+_VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
+_TEXT_MODEL = "llama-3.3-70b-versatile"
+
 
 async def _reverse_geocode(lat: float, lon: float) -> str:
     """Return a precise street address for the given coordinates using Nominatim."""
@@ -50,8 +53,7 @@ async def classify(
     else:
         location_str = "Powai, Mumbai (exact location not provided)"
 
-    # 1. Upload Images First
-    image_url = None
+    # 1. Upload images first, collect public URLs
     urls = []
     if images:
         try:
@@ -63,19 +65,16 @@ async def classify(
                 image_bytes = await img.read()
                 ext = img.filename.split('.')[-1] if '.' in img.filename else 'jpg'
                 filename = f"{uuid.uuid4()}.{ext}"
-                
                 db.storage.from_("complaint_images").upload(
                     path=filename,
                     file=image_bytes,
                     file_options={"content-type": img.content_type or "image/jpeg"}
                 )
                 urls.append(db.storage.from_("complaint_images").get_public_url(filename))
-            if urls:
-                image_url = ",".join(urls)
         except Exception as e:
             print(f"Error uploading image: {e}")
 
-    # 2. Prepare AI Request
+    # 2. Prepare AI request — use vision model when images are present
     text_part = (
         f"Description: {description or '(no description)'}\n"
         f"Location: {location_str}\n\n"
@@ -83,17 +82,18 @@ async def classify(
     )
 
     if urls:
-        model_to_use = "meta-llama/llama-4-scout-17b-16e-instruct"
+        # Pass public image URLs directly to the vision model (up to 5)
         user_content = [{"type": "text", "text": text_part}]
-        for u in urls:
+        for u in urls[:5]:
             user_content.append({"type": "image_url", "image_url": {"url": u}})
+        model = _VISION_MODEL
     else:
-        model_to_use = "llama-3.3-70b-versatile"
         user_content = text_part
-    
+        model = _TEXT_MODEL
+
     try:
         response = await _client.chat.completions.create(
-            model=model_to_use,
+            model=model,
             messages=[
                 {"role": "system", "content": _prompt},
                 {"role": "user", "content": user_content}
@@ -101,7 +101,6 @@ async def classify(
             temperature=0.1
         )
     except Exception as e:
-        # Gracefully handle upstream Groq API errors
         raise HTTPException(status_code=500, detail={"error_type": "AI_API_Error", "message": str(e)})
 
     try:
@@ -134,6 +133,6 @@ async def classify(
         "confidence": raw.get("confidence", 0.5),
         "description": raw.get("description_cleaned", description),
         "location": location_str,
-        "image_url": image_url,
+        "image_urls": urls,
         "duplicate": duplicate,
     }

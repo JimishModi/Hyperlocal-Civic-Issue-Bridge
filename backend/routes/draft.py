@@ -22,7 +22,7 @@ class DraftRequest(BaseModel):
     department: str
     description: str
     location: str
-    image_url: str | None = None
+    image_urls: list[str] = []
 
 @router.post("/draft")
 async def draft(req: DraftRequest):
@@ -58,5 +58,5 @@ async def draft(req: DraftRequest):
         "category": req.category,
         "email": dept_info["email"],
         "portal_url": dept_info["portal"],
-        "image_url": req.image_url,
+        "image_urls": req.image_urls,
     }
