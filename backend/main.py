@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 # Load single shared .env from workspace root (parent of backend/)
 load_dotenv(Path(__file__).parent.parent / ".env")
 
-from routes import validate, classify, draft, file_complaint, tracker, escalate, chat
+from routes import validate, classify, draft, file_complaint, tracker, escalate, chat, dashboard
 from services import scheduler
 
 app = FastAPI(title="Civic Issue Bridge API")
@@ -35,6 +35,7 @@ app.include_router(file_complaint.router)
 app.include_router(tracker.router)
 app.include_router(escalate.router)
 app.include_router(chat.router)
+app.include_router(dashboard.router)
 
 
 @app.on_event("startup")

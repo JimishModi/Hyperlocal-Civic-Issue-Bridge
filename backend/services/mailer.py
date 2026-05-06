@@ -63,16 +63,22 @@ def send_followup_reminder(
     category: str,
     department: str,
     days_elapsed: int,
+    app_url: str = "https://hyperlocal-civic-issue-bridge.vercel.app",
 ) -> bool:
     subject = f"Has BMC responded? — Your complaint {reference_code}"
+    tracker_url = f"{app_url}/tracker?code={reference_code}"
     body = (
         f"Hi,\n\n"
         f"It has been {days_elapsed} days since you filed your civic complaint "
         f"({reference_code}) about a {category} issue with {department}.\n\n"
-        f"Please let us know if BMC has taken any action:\n\n"
-        f"  → Open the app and go to Track → enter code {reference_code}\n"
-        f"  → If your issue is resolved, mark it as resolved.\n"
-        f"  → If there is still no response, you can escalate directly from the app.\n\n"
+        f"Has BMC taken any action? Please update your complaint:\n\n"
+        f"  → Track & update your complaint:\n"
+        f"    {tracker_url}\n\n"
+        f"Once there, you can:\n"
+        f"  ✅  Log that BMC responded and took action\n"
+        f"  ⚠️  Log that BMC responded but took no action\n"
+        f"  ❌  Report that BMC has not responded at all\n"
+        f"  🔺  Escalate to RTI or CPGRAMS if needed\n\n"
         f"Under BMC's Grievance Redressal Guidelines, departments must respond within 15 days.\n"
         f"If they haven't, you have the right to escalate — and we'll help you do it.\n\n"
         f"— Civic Issue Bridge"

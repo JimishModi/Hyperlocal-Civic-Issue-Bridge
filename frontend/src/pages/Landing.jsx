@@ -50,6 +50,15 @@ export default function Landing() {
       >
         Report an Issue
       </button>
+
+      {user && (
+        <button
+          className="btn-ghost max-w-xs mt-3"
+          onClick={() => navigate('/dashboard')}
+        >
+          My Complaints →
+        </button>
+      )}
     </div>
   )
 }
