@@ -13,6 +13,10 @@ export default function Tracker() {
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
   const [resolving, setResolving] = useState(false)
+  const [showActionForm, setShowActionForm] = useState(false)
+  const [actionType, setActionType] = useState('')
+  const [actionNote, setActionNote] = useState('')
+  const [submittingAction, setSubmittingAction] = useState(false)
 
   // Auto-search when navigated here with a reference code (e.g. Track Existing)
   useEffect(() => {
@@ -41,6 +45,25 @@ export default function Tracker() {
   /* ── Escalation eligibility: unresolved + > 15 days ── */
   const showEscalation = data && (data.status === 'awaiting' || data.status === 'escalated') && data.days_since_filed > 15
 
+  const handleLogAction = async () => {
+    if (!actionType) return
+    setSubmittingAction(true)
+    try {
+      await apiFetch(`/track/${encodeURIComponent(code.trim())}/action`, {
+        method: 'POST',
+        body: JSON.stringify({ update_type: actionType, notes: actionNote }),
+      })
+      setShowActionForm(false)
+      setActionType('')
+      setActionNote('')
+      handleTrack()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setSubmittingAction(false)
+    }
+  }
+
   const handleResolve = async () => {
     setResolving(true)
     try {
@@ -55,13 +78,6 @@ export default function Tracker() {
 
   return (
     <div className="page page-enter">
-      <button
-        className="btn-ghost mb-4 flex items-center gap-1 text-label-sm"
-        onClick={() => navigate('/')}
-      >
-        ← Home
-      </button>
-
       <h1 className="text-h2 text-primary-container mb-6">Track Complaint</h1>
 
       {/* Reference code input */}
@@ -115,6 +131,58 @@ export default function Tracker() {
             >
               {resolving ? 'Marking…' : '✓ Mark as Resolved'}
             </button>
+          )}
+
+          {/* Action log */}
+          {data.updates?.length > 0 && (
+            <div className="card mt-4 mb-0">
+              <p className="text-label-bold mb-2">Action Log</p>
+              <ul className="space-y-2">
+                {data.updates.map((u, i) => (
+                  <li key={i} className="text-label-sm flex gap-2">
+                    <span className="text-accent-slate shrink-0">{u.date}</span>
+                    <span>{u.type === 'bmc_responded' ? '✅ BMC responded & acted'
+                      : u.type === 'bmc_partial' ? '⚠️ BMC responded, no action'
+                      : u.type === 'no_response' ? '❌ No response'
+                      : u.type === 'resolved' ? '✅ Resolved'
+                      : '📝 Note'}{u.notes ? ` — ${u.notes}` : ''}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Log action form */}
+          {showActionForm ? (
+            <div className="mt-4 p-3 bg-surface-container rounded-xl space-y-3">
+              <p className="text-label-bold">Log an Update</p>
+              <select className="input-field" value={actionType} onChange={e => setActionType(e.target.value)}>
+                <option value="">Select what happened…</option>
+                <option value="bmc_responded">✅ BMC responded and took action</option>
+                <option value="bmc_partial">⚠️ BMC responded but no action taken</option>
+                <option value="no_response">❌ No response from BMC</option>
+                <option value="resolved">✅ Issue is now resolved</option>
+                <option value="note">📝 Add a note</option>
+              </select>
+              <textarea
+                className="input-field min-h-[80px] resize-none"
+                placeholder="Additional details (optional)"
+                value={actionNote}
+                onChange={e => setActionNote(e.target.value)}
+              />
+              <div className="flex gap-2">
+                <button className="btn-secondary text-sm py-1.5" disabled={!actionType || submittingAction} onClick={handleLogAction}>
+                  {submittingAction ? 'Saving…' : 'Save Update'}
+                </button>
+                <button className="btn-ghost text-sm py-1.5" onClick={() => setShowActionForm(false)}>Cancel</button>
+              </div>
+            </div>
+          ) : (
+            data.status !== 'resolved' && (
+              <button className="btn-ghost text-sm py-1.5 mt-3" onClick={() => setShowActionForm(true)}>
+                + Log Action / Update
+              </button>
+            )
           )}
 
           {data.escalations?.length > 0 && (
