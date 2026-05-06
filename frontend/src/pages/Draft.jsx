@@ -193,22 +193,19 @@ export default function Draft() {
       {/* Filing options */}
       <div className="flex flex-col gap-3 mb-6">
         {/* Send by Email */}
-        <a
-          id="email-button"
-          href={mailtoHref}
-          onClick={handleEmailClick}
-          className={`text-center block no-underline px-4 py-3 rounded-xl font-semibold transition-all ${
-            emailClicked
-              ? 'bg-accent-green/10 border border-accent-green text-accent-green'
-              : 'btn-primary'
-          }`}
-        >
-          {emailClicked ? 'Email Opened — Send from your app' : 'File by Email'}
-        </a>
-        {emailClicked && (
-          <p className="text-label-sm text-accent-slate -mt-1 text-center">
-            Your email app should have opened with the complaint pre-filled.
-          </p>
+        {emailClicked ? (
+          <div className="px-4 py-3 rounded-xl bg-accent-green/10 border border-accent-green text-accent-green text-center font-semibold select-none">
+            ✓ Email Sent
+          </div>
+        ) : (
+          <a
+            id="email-button"
+            href={mailtoHref}
+            onClick={handleEmailClick}
+            className="btn-primary text-center block no-underline"
+          >
+            Send by Email
+          </a>
         )}
 
         {/* File on Portal */}
