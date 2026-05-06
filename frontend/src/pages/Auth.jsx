@@ -71,11 +71,6 @@ export default function Auth() {
           © 2026 Civic Bridge.
         </p>
         
-        <div className="flex items-center justify-center gap-4 text-sm text-slate-500 font-medium">
-          <a href="#" className="hover:text-slate-800 transition-colors">Privacy Policy</a>
-          <a href="#" className="hover:text-slate-800 transition-colors">Terms of Service</a>
-          <a href="#" className="hover:text-slate-800 transition-colors">Security Disclosure</a>
-        </div>
       </div>
     </div>
   );
