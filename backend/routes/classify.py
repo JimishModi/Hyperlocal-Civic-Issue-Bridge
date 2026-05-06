@@ -4,10 +4,11 @@ from pathlib import Path
 
 import httpx
 from groq import AsyncGroq
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 
 from db import get_db
 from utils.geo import find_nearby_duplicate
+from utils.lang import get_lang, lang_instruction
 
 router = APIRouter()
 
@@ -40,11 +41,13 @@ async def _reverse_geocode(lat: float, lon: float) -> str:
 
 @router.post("/classify")
 async def classify(
+    request: Request,
     description: str = Form(""),
     image: UploadFile | None = File(None),
     latitude: float | None = Form(None),
     longitude: float | None = Form(None),
 ):
+    lang = get_lang(request)
     if latitude and longitude:
         location_str = await _reverse_geocode(latitude, longitude)
     else:
@@ -56,6 +59,15 @@ async def classify(
         "Classify this civic issue."
     )
 
+    # Instruct description_cleaned to be in user's language
+    desc_lang_note = ""
+    if lang != "en":
+        lang_name = {"hi": "Hindi", "mr": "Marathi"}.get(lang, "English")
+        desc_lang_note = (
+            f"\n\nIMPORTANT: Write the 'description_cleaned' field in {lang_name} (Devanagari script). "
+            f"Keep 'category' and 'department' values in English exactly as specified."
+        )
+
     # Note: Groq recently decommissioned its vision models. 
     # We are falling back to a powerful text model and only passing the text description.
     # If vision is strictly required, you will need to switch back to Gemini or another vision provider.
@@ -63,7 +75,7 @@ async def classify(
     response = await _client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[
-            {"role": "system", "content": _prompt},
+            {"role": "system", "content": _prompt + desc_lang_note},
             {"role": "user", "content": text_part}
         ],
         temperature=0.1

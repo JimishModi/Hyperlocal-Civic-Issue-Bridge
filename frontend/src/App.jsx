@@ -1,5 +1,6 @@
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import Landing from './pages/Landing.jsx'
 import Intake from './pages/Intake.jsx'
 import Result from './pages/Result.jsx'
@@ -11,9 +12,16 @@ import Dashboard from './pages/Dashboard.jsx'
 import ChatBot from './components/ChatBot.jsx'
 import { supabase } from './config/supabase.js'
 
+const LANGS = [
+  { code: 'en', label: 'EN' },
+  { code: 'hi', label: 'हिं' },
+  { code: 'mr', label: 'मरा' },
+]
+
 function TopNav() {
   const location = useLocation()
   const navigate = useNavigate()
+  const { t, i18n } = useTranslation()
   const [user, setUser] = useState(null)
   const hide = ['/', '/auth'].includes(location.pathname)
 
@@ -27,8 +35,26 @@ function TopNav() {
 
   return (
     <div className="flex items-center justify-between px-4 pt-4 pb-0">
-      <button className="btn-ghost text-label-sm py-1 px-3" onClick={() => navigate('/')}>← Home</button>
-      <button className="btn-ghost text-label-sm py-1 px-3" onClick={() => navigate('/dashboard')}>My Complaints</button>
+      <button className="btn-ghost text-label-sm py-1 px-3" onClick={() => navigate('/')}>{t('nav.home')}</button>
+      <div className="flex items-center gap-2">
+        <button className="btn-ghost text-label-sm py-1 px-3" onClick={() => navigate('/dashboard')}>{t('nav.myComplaints')}</button>
+        {/* Language switcher */}
+        <div className="flex bg-surface-container rounded-lg overflow-hidden border border-outline-variant">
+          {LANGS.map((l) => (
+            <button
+              key={l.code}
+              onClick={() => i18n.changeLanguage(l.code)}
+              className={`px-2.5 py-1 text-xs font-semibold transition-colors ${
+                i18n.language?.startsWith(l.code)
+                  ? 'bg-primary-container text-on-primary'
+                  : 'text-accent-slate hover:bg-surface-container-low'
+              }`}
+            >
+              {l.label}
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }

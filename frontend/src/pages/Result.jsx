@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { apiFetch } from '../config/api.js'
 
 const CATEGORIES = [
@@ -18,6 +19,7 @@ const CATEGORIES = [
 export default function Result() {
   const { state } = useLocation()
   const navigate = useNavigate()
+  const { t } = useTranslation()
 
   const classification = state?.classification
   const coords = state?.coords
@@ -28,8 +30,8 @@ export default function Result() {
   if (!classification) {
     return (
       <div className="page page-enter text-center py-20">
-        <p className="text-body-md text-accent-slate">No classification data. Please start from the intake page.</p>
-        <button className="btn-ghost mt-4" onClick={() => navigate('/intake')}>Go to Intake</button>
+        <p className="text-body-md text-accent-slate">{t('result.noData')}</p>
+        <button className="btn-ghost mt-4" onClick={() => navigate('/intake')}>{t('result.goIntake')}</button>
       </div>
     )
   }
@@ -58,12 +60,12 @@ export default function Result() {
 
   return (
     <div className="page page-enter">
-      <h1 className="text-h2 text-primary-container mb-6">Classification Result</h1>
+      <h1 className="text-h2 text-primary-container mb-6">{t('result.title')}</h1>
 
       <div className="card-elevated mb-4">
         <div className="flex items-center justify-between mb-3">
-          <span className="text-label-bold text-on-surface">Category</span>
-          <span className="chip-info">{Math.round((classification.confidence || 0) * 100)}% confidence</span>
+          <span className="text-label-bold text-on-surface">{t('result.category')}</span>
+          <span className="chip-info">{t('result.confidence', { value: Math.round((classification.confidence || 0) * 100) })}</span>
         </div>
         <select
           id="category-select"
@@ -78,7 +80,7 @@ export default function Result() {
       </div>
 
       <div className="card mb-6">
-        <p className="text-label-bold text-on-surface mb-1">Department</p>
+        <p className="text-label-bold text-on-surface mb-1">{t('result.department')}</p>
         <p className="text-body-md text-accent-slate">{classification.department || '—'}</p>
       </div>
 
@@ -94,11 +96,11 @@ export default function Result() {
         onClick={handleConfirm}
         disabled={submitting}
       >
-        {submitting ? 'Generating draft…' : 'Looks right — Generate Draft'}
+        {submitting ? t('result.generating') : t('result.confirm')}
       </button>
 
       <button className="btn-ghost" onClick={() => navigate('/intake')}>
-        ← Re-submit
+        {t('result.resubmit')}
       </button>
     </div>
   )

@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { apiFetch } from '../config/api.js'
 import DraftEditor from '../components/DraftEditor.jsx'
 
 export default function Draft() {
   const { state } = useLocation()
   const navigate = useNavigate()
+  const { t } = useTranslation()
 
   const draft = state?.draft
   const coords = state?.coords
@@ -21,8 +23,8 @@ export default function Draft() {
   if (!draft) {
     return (
       <div className="page page-enter text-center py-20">
-        <p className="text-body-md text-accent-slate">No draft data. Please start from the intake page.</p>
-        <button className="btn-ghost mt-4" onClick={() => navigate('/intake')}>Go to Intake</button>
+        <p className="text-body-md text-accent-slate">{t('draft.noData')}</p>
+        <button className="btn-ghost mt-4" onClick={() => navigate('/intake')}>{t('draft.goIntake')}</button>
       </div>
     )
   }
@@ -47,7 +49,7 @@ export default function Draft() {
     setError(null)
 
     if (!userEmail.trim()) {
-      setError('Please enter your email — it\'s required to send you a copy and 14-day reminder.')
+      setError(t('draft.emailMissing'))
       return
     }
 
@@ -96,11 +98,11 @@ export default function Draft() {
       <div className="page page-enter">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-full bg-accent-green flex items-center justify-center text-white text-lg">✓</div>
-          <h1 className="text-h2 text-primary-container">Complaint Filed!</h1>
+          <h1 className="text-h2 text-primary-container">{t('draft.filed')}</h1>
         </div>
 
         <div className="card-elevated mb-4">
-          <p className="text-label-bold text-on-surface mb-4">Process Breakdown</p>
+          <p className="text-label-bold text-on-surface mb-4">{t('draft.processBreakdown')}</p>
           <div className="flex flex-col gap-4 mb-6">
             {Object.values(breakdown).map((step, idx) => (
               <div key={idx} className="flex items-start gap-3">
@@ -115,14 +117,14 @@ export default function Draft() {
             ))}
           </div>
           <div className="bg-surface-container-low border border-outline-variant rounded-lg p-3 text-center mb-4">
-            <p className="text-label-sm text-accent-slate mb-0.5">Your reference code</p>
+            <p className="text-label-sm text-accent-slate mb-0.5">{t('draft.refCode')}</p>
             <p className="text-label-bold text-lg tracking-widest">{localStorage.getItem('civic_ref_code')}</p>
           </div>
           <button
             className="btn-secondary w-full"
             onClick={() => navigate('/tracker', { state: { reference_code: localStorage.getItem('civic_ref_code') } })}
           >
-            Continue to Tracker →
+            {t('draft.continueTracker')}
           </button>
         </div>
       </div>
@@ -131,13 +133,13 @@ export default function Draft() {
 
   return (
     <div className="page page-enter">
-      <h1 className="text-h2 text-primary-container mb-2">Your Complaint Draft</h1>
+      <h1 className="text-h2 text-primary-container mb-2">{t('draft.title')}</h1>
 
       {/* Department info */}
       <div className="card mb-4">
-        <p className="text-label-bold text-on-surface mb-1">Department</p>
+        <p className="text-label-bold text-on-surface mb-1">{t('draft.departmentLabel')}</p>
         <p className="text-body-md text-accent-slate mb-3">{draft.department || '—'}</p>
-        <p className="text-label-bold text-on-surface mb-1">Email</p>
+        <p className="text-label-bold text-on-surface mb-1">{t('draft.emailLabel')}</p>
         <p className="text-body-md text-accent-slate">{draft.email || '—'}</p>
       </div>
 
@@ -147,23 +149,23 @@ export default function Draft() {
       {/* Duplicate warning */}
       {duplicateRef && (
         <div className="mb-4 p-4 rounded-xl bg-amber-50 border border-amber-200">
-          <p className="text-label-bold text-amber-900 mb-1">Already Reported</p>
+          <p className="text-label-bold text-amber-900 mb-1">{t('draft.duplicateTitle')}</p>
           <p className="text-label-sm text-amber-800 mb-3">
-            This issue is already filed (Ref: <strong>{duplicateRef}</strong>). Filing again won't speed things up — but you can if your issue is different.
+            {t('draft.duplicateDesc', { ref: duplicateRef })}
           </p>
           <div className="flex gap-2">
             <button
               className="btn-ghost text-sm py-1.5"
               onClick={() => navigate('/tracker', { state: { reference_code: duplicateRef } })}
             >
-              Track Existing →
+              {t('draft.trackExisting')}
             </button>
             <button
               className="btn-secondary text-sm py-1.5"
               disabled={filing}
               onClick={() => { setDuplicateRef(null); handleFile(true) }}
             >
-              File Anyway
+              {t('draft.fileAnyway')}
             </button>
           </div>
         </div>
@@ -178,12 +180,12 @@ export default function Draft() {
       {/* Your email — required */}
       <div className="mb-6">
         <label className="block text-label-bold text-on-surface mb-2">
-          Your Email <span className="text-error text-xs ml-1">*required</span>
+          {t('draft.yourEmailLabel')} <span className="text-error text-xs ml-1">{t('draft.emailRequired')}</span>
         </label>
         <input
           className="input-field"
           type="email"
-          placeholder="you@example.com"
+          placeholder={t('draft.emailPlaceholder')}
           required
           value={userEmail}
           onChange={e => setUserEmail(e.target.value)}
@@ -193,19 +195,22 @@ export default function Draft() {
       {/* Filing options */}
       <div className="flex flex-col gap-3 mb-6">
         {/* Send by Email */}
-        {emailClicked ? (
-          <div className="px-4 py-3 rounded-xl bg-accent-green/10 border border-accent-green text-accent-green text-center font-semibold select-none">
-            ✓ Email Sent
-          </div>
-        ) : (
-          <a
-            id="email-button"
-            href={mailtoHref}
-            onClick={handleEmailClick}
-            className="btn-primary text-center block no-underline"
-          >
-            Send by Email
-          </a>
+        <a
+          id="email-button"
+          href={mailtoHref}
+          onClick={handleEmailClick}
+          className={`text-center block no-underline px-4 py-3 rounded-xl font-semibold transition-all ${
+            emailClicked
+              ? 'bg-accent-green/10 border border-accent-green text-accent-green'
+              : 'btn-primary'
+          }`}
+        >
+          {emailClicked ? t('draft.emailOpened') : t('draft.fileByEmail')}
+        </a>
+        {emailClicked && (
+          <p className="text-label-sm text-accent-slate -mt-1 text-center">
+            {t('draft.emailHint')}
+          </p>
         )}
 
         {/* File on Portal */}
@@ -218,22 +223,22 @@ export default function Draft() {
           }`}
           onClick={handlePortal}
         >
-          {portalClicked ? 'BMC Portal Opened' : 'File on BMC Portal'}
+          {portalClicked ? t('draft.portalOpened') : t('draft.fileOnPortal')}
         </button>
         {portalClicked && (
           <p className="text-label-sm text-accent-slate -mt-1 text-center">
-            Paste your complaint into the BMC grievance portal.
+            {t('draft.portalHint')}
           </p>
         )}
       </div>
 
       {/* Save & Track — only active after at least one filing method used */}
       <div className={`rounded-xl p-4 transition-all ${hasFiled ? 'bg-surface-container' : 'bg-surface-container-low opacity-60'}`}>
-        <p className="text-label-bold text-on-surface mb-0.5">Save & Track</p>
+        <p className="text-label-bold text-on-surface mb-0.5">{t('draft.saveTrack')}</p>
         <p className="text-label-sm text-accent-slate mb-3">
           {hasFiled
-            ? `Get a reference code and 14-day follow-up reminder${userEmail ? '' : ' — add your email above for a copy'}.`
-            : 'File by email or portal first to enable tracking.'}
+            ? (userEmail ? t('draft.saveTrackDesc') : t('draft.saveTrackDescEmail'))
+            : t('draft.saveTrackGated')}
         </p>
         <button
           id="file-button"
@@ -241,7 +246,7 @@ export default function Draft() {
           onClick={() => handleFile()}
           disabled={filing || !hasFiled}
         >
-          {filing ? 'Saving…' : 'Save & Track'}
+          {filing ? t('draft.saving') : t('draft.saveTrack')}
         </button>
       </div>
     </div>

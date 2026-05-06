@@ -1,8 +1,11 @@
 import React from 'react';
 import { Landmark, ShieldCheck } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../config/supabase';
 
 export default function Auth() {
+  const { t } = useTranslation();
+
   const handleGoogleLogin = async () => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
@@ -14,7 +17,7 @@ export default function Auth() {
       if (error) throw error;
     } catch (error) {
       console.error('Error logging in with Google:', error.message);
-      alert('Error logging in with Google: ' + error.message);
+      alert(t('auth.loginError') + error.message);
     }
   };
 
@@ -26,9 +29,9 @@ export default function Auth() {
       </div>
 
       {/* Header text */}
-      <h1 className="text-3xl font-bold text-[#0b1f3c] mb-2 text-center">Welcome to Civic Bridge</h1>
+      <h1 className="text-3xl font-bold text-[#0b1f3c] mb-2 text-center">{t('auth.welcome')}</h1>
       <p className="text-slate-600 mb-8 text-center max-w-sm font-medium">
-        Securely connect with your local municipality.
+        {t('auth.subtitle')}
       </p>
 
       {/* Auth Card */}
@@ -56,7 +59,7 @@ export default function Auth() {
             />
             <path d="M1 1h22v22H1z" fill="none" />
           </svg>
-          Continue with Google
+          {t('auth.continueGoogle')}
         </button>
       </div>
 
@@ -64,11 +67,11 @@ export default function Auth() {
       <div className="mt-12 text-center">
         <div className="flex items-center justify-center gap-1.5 text-slate-500 mb-4 text-sm font-medium">
           <ShieldCheck size={16} />
-          <span>Secured connection</span>
+          <span>{t('auth.secured')}</span>
         </div>
         
         <p className="text-[#0b1f3c] text-sm font-semibold mb-3">
-          © 2026 Civic Bridge.
+          {t('auth.copyright')}
         </p>
         
       </div>

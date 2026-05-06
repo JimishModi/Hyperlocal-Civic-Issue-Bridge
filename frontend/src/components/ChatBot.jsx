@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { apiFetch } from '../config/api.js'
 
 /**
@@ -7,6 +8,7 @@ import { apiFetch } from '../config/api.js'
  * POST /chat with the conversation history.
  */
 export default function ChatBot() {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
@@ -38,7 +40,7 @@ export default function ChatBot() {
     } catch (err) {
       setMessages((prev) => [
         ...prev,
-        { role: 'assistant', content: `Sorry, something went wrong: ${err.message}` },
+        { role: 'assistant', content: t('chat.error', { message: err.message }) },
       ])
     } finally {
       setSending(false)
@@ -74,7 +76,7 @@ export default function ChatBot() {
           <div className="bg-surface-container-lowest rounded-t-2xl shadow-chat border border-outline-variant flex flex-col" style={{ height: '60vh', maxHeight: '480px' }}>
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-outline-variant">
-              <span className="text-label-bold text-on-surface">Civic Bridge Assistant</span>
+              <span className="text-label-bold text-on-surface">{t('chat.title')}</span>
               <button
                 id="chat-close"
                 onClick={() => setOpen(false)}
@@ -91,7 +93,7 @@ export default function ChatBot() {
             <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
               {messages.length === 0 && (
                 <p className="text-body-md text-accent-slate text-center py-8">
-                  Ask anything about civic issues, complaints, or how to use this app.
+                  {t('chat.emptyState')}
                 </p>
               )}
               {messages.map((msg, i) => (
@@ -108,7 +110,7 @@ export default function ChatBot() {
               ))}
               {sending && (
                 <div className="max-w-[85%] px-3 py-2 rounded-xl bg-surface-container text-accent-slate rounded-bl-sm">
-                  <span className="animate-pulse">Thinking…</span>
+                  <span className="animate-pulse">{t('chat.thinking')}</span>
                 </div>
               )}
             </div>
@@ -119,7 +121,7 @@ export default function ChatBot() {
                 <input
                   id="chat-input"
                   className="input-field flex-1 min-h-[44px]"
-                  placeholder="Type a message…"
+                  placeholder={t('chat.placeholder')}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
