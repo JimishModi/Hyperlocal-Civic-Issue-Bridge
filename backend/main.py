@@ -14,7 +14,14 @@ app = FastAPI(title="Civic Issue Bridge API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5174", "http://127.0.0.1:5174", "http://localhost:5175"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5174",
+        "http://localhost:5175",
+        "https://hyperlocal-civic-issue-bridge.vercel.app",
+    ],
     allow_methods=["*"],
     allow_headers=["*"],
 )

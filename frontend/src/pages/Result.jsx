@@ -20,6 +20,7 @@ export default function Result() {
   const navigate = useNavigate()
 
   const classification = state?.classification
+  const coords = state?.coords
   const [category, setCategory] = useState(classification?.category || '')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
@@ -47,7 +48,7 @@ export default function Result() {
           image_url: classification.image_url,
         }),
       })
-      navigate('/draft', { state: { draft: draftResult } })
+      navigate('/draft', { state: { draft: draftResult, coords } })
     } catch (err) {
       setError(err.message)
     } finally {

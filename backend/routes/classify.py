@@ -2,15 +2,40 @@ import json
 import os
 from pathlib import Path
 
-import base64
+import httpx
 from groq import Groq
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+
+from db import get_db
+from utils.geo import find_nearby_duplicate
 
 router = APIRouter()
 
 _prompt = (Path(__file__).parent.parent / "prompts" / "vision_classifier.txt").read_text()
 
 _client = Groq(api_key=os.environ.get("GROQ_API_KEY", ""))
+
+
+async def _reverse_geocode(lat: float, lon: float) -> str:
+    """Return a precise street address for the given coordinates using Nominatim."""
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            r = await client.get(
+                "https://nominatim.openstreetmap.org/reverse",
+                params={"format": "json", "lat": lat, "lon": lon, "zoom": 18, "addressdetails": 1},
+                headers={"User-Agent": "CivicIssueBridge/1.0 (hackathon@iitb)"},
+            )
+            data = r.json()
+        addr = data.get("address", {})
+        parts = []
+        for key in ["amenity", "building", "road", "neighbourhood", "suburb", "city", "postcode"]:
+            val = addr.get(key)
+            if val and val not in parts:
+                parts.append(val)
+        return ", ".join(parts) if parts else data.get("display_name", f"{lat:.4f}, {lon:.4f}")
+    except Exception as e:
+        print(f"Reverse geocode error: {e}")
+        return f"{lat:.4f}, {lon:.4f} (Powai, Mumbai)"
 
 
 @router.post("/classify")
@@ -20,11 +45,10 @@ async def classify(
     latitude: float | None = Form(None),
     longitude: float | None = Form(None),
 ):
-    location_str = (
-        f"{latitude:.4f}, {longitude:.4f} (Powai, Mumbai)"
-        if latitude and longitude
-        else "Powai, Mumbai (exact location not provided)"
-    )
+    if latitude and longitude:
+        location_str = await _reverse_geocode(latitude, longitude)
+    else:
+        location_str = "Powai, Mumbai (exact location not provided)"
 
     text_part = (
         f"Description: {description or '(no description)'}\n"
@@ -55,10 +79,23 @@ async def classify(
     except json.JSONDecodeError:
         raise HTTPException(status_code=500, detail="Classification service error")
 
+    # Duplicate check — same category + unresolved + within 200m
+    duplicate = None
+    if latitude and longitude:
+        try:
+            dup = find_nearby_duplicate(get_db(), raw.get("category", "Other"), latitude, longitude)
+            if dup:
+                duplicate = {
+                    "reference_code": dup["reference_code"],
+                    "status": dup["status"],
+                    "date_filed": dup.get("filed_at", ""),
+                }
+        except Exception as e:
+            print(f"Duplicate check error: {e}")
+
     image_url = None
     if image:
         try:
-            from db import get_db
             import uuid
             
             image_bytes = await image.read()
@@ -82,4 +119,5 @@ async def classify(
         "description": raw.get("description_cleaned", description),
         "location": location_str,
         "image_url": image_url,
+        "duplicate": duplicate,
     }
