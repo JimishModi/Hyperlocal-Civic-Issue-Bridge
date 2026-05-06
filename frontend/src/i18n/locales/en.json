@@ -80,7 +80,10 @@
     "refCode": "Your reference code",
     "continueTracker": "Continue to Tracker →",
     "noData": "No draft data. Please start from the intake page.",
-    "goIntake": "Go to Intake"
+    "goIntake": "Go to Intake",
+    "editorLabel": "Complaint Draft",
+    "editorPlaceholder": "Your complaint draft will appear here…",
+    "charCount": "{{count}} characters"
   },
   "tracker": {
     "title": "Track Complaint",

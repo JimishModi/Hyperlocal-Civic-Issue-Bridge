@@ -26,5 +26,5 @@ Rules:
 - confidence should reflect how certain you are given the available evidence
 - If a photo is provided, use visual evidence to improve accuracy
 - department must match the BMC S-Ward department responsible for that category
-- description_cleaned should fix typos, remove profanity, and normalize to clear English
+- description_cleaned should fix typos, remove profanity, and normalize to clear, neutral language (the response language is set per-request)
 - Do not add any text outside the JSON
