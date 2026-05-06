@@ -3,19 +3,18 @@ import resend
 
 resend.api_key = os.environ.get("RESEND_API_KEY", "")
 
-FROM_ADDRESS = "onboarding@resend.dev"
+FROM_ADDRESS = os.environ.get("RESEND_FROM_EMAIL", "onboarding@resend.dev")
 
-# Resend free tier restriction: can only deliver to your own verified email.
-# DEMO_INBOX redirects all outbound mail there so you can see it working live.
-# In production with a verified domain, remove this and use to_email directly.
+# Resend free tier: onboarding@resend.dev can only deliver to your verified account email.
+# Set DEMO_EMAIL to your Resend account email so all outbound mail is redirected there.
 DEMO_INBOX = os.environ.get("DEMO_EMAIL", "")
 
 
-def _send(*, to: str, cc: str | None, subject: str, body: str) -> bool:
-    # In demo mode, deliver to your own inbox with a header showing real destination
+def _send(*, to: str, cc: str | None = None, subject: str, body: str) -> bool:
+    # In demo mode, redirect all mail to your own inbox
     actual_to = DEMO_INBOX if DEMO_INBOX else to
     demo_note = (
-        f"[DEMO MODE — in production this email goes to: {to}]\n\n"
+        f"[DEMO — production recipient: {to}]\n\n"
         if DEMO_INBOX and DEMO_INBOX != to
         else ""
     )
@@ -33,7 +32,7 @@ def _send(*, to: str, cc: str | None, subject: str, body: str) -> bool:
         email = resend.Emails.send(params)
         # SDK v2 may return an object or dict — handle both
         email_id = email.get("id") if isinstance(email, dict) else getattr(email, "id", None)
-        print(f"Resend sent OK — id: {email_id}, to: {actual_to}, subject: {params['subject']}")
+        print(f"Resend sent OK — id: {email_id}, to: {actual_to}, subject: {subject}")
         return bool(email_id)
     except Exception as e:
         print(f"Resend ERROR: {e}")
@@ -78,4 +77,4 @@ def send_followup_reminder(
         f"If they haven't, you have the right to escalate — and we'll help you do it.\n\n"
         f"— Civic Issue Bridge"
     )
-    return _send(to=user_email, cc=None, subject=subject, body=body)
+    return _send(to=user_email, subject=subject, body=body)

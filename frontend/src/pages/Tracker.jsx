@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { apiFetch } from '../config/api.js'
 
@@ -14,12 +14,21 @@ export default function Tracker() {
   const [error, setError] = useState(null)
   const [resolving, setResolving] = useState(false)
 
-  const handleTrack = async () => {
-    if (!code.trim()) return
+  // Auto-search when navigated here with a reference code (e.g. Track Existing)
+  useEffect(() => {
+    if (state?.reference_code) {
+      handleTrack(state.reference_code)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const handleTrack = async (overrideCode) => {
+    const searchCode = overrideCode || code
+    if (!searchCode?.trim()) return
     setError(null)
     setTracking(true)
     try {
-      const result = await apiFetch(`/track/${encodeURIComponent(code.trim())}`)
+      const result = await apiFetch(`/track/${encodeURIComponent(searchCode.trim())}`)
       setData(result)
     } catch (err) {
       setError(err.message)

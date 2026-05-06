@@ -1,11 +1,13 @@
 import logging
 import traceback
+from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
-load_dotenv()
+# Load single shared .env from workspace root (parent of backend/)
+load_dotenv(Path(__file__).parent.parent / ".env")
 
 from routes import validate, classify, draft, file_complaint, tracker, escalate, chat
 from services import scheduler
