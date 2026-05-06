@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from typing import Literal
 
-from groq import Groq
+from groq import AsyncGroq
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
@@ -10,7 +10,7 @@ router = APIRouter()
 
 _prompt = (Path(__file__).parent.parent / "prompts" / "chatbot.txt").read_text()
 
-_client = Groq(api_key=os.environ.get("GROQ_API_KEY", ""))
+_client = AsyncGroq(api_key=os.environ.get("GROQ_API_KEY", ""))
 
 
 class Message(BaseModel):
@@ -31,7 +31,7 @@ async def chat(req: ChatRequest):
     for m in req.messages:
         messages.append({"role": m.role, "content": m.content})
 
-    response = _client.chat.completions.create(
+    response = await _client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=messages
     )

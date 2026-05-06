@@ -2,7 +2,7 @@ import json
 import os
 from pathlib import Path
 
-from groq import Groq
+from groq import AsyncGroq
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
@@ -14,7 +14,7 @@ _ward = json.loads(
 )
 _dept_map = {d["category"]: d for d in _ward["departments"]}
 
-_client = Groq(api_key=os.environ.get("GROQ_API_KEY", ""))
+_client = AsyncGroq(api_key=os.environ.get("GROQ_API_KEY", ""))
 
 
 class DraftRequest(BaseModel):
@@ -37,7 +37,7 @@ async def draft(req: DraftRequest):
         "Write the formal complaint letter."
     )
 
-    response = _client.chat.completions.create(
+    response = await _client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[
             {"role": "system", "content": _prompt},

@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 
 import httpx
-from groq import Groq
+from groq import AsyncGroq
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
 from db import get_db
@@ -13,7 +13,7 @@ router = APIRouter()
 
 _prompt = (Path(__file__).parent.parent / "prompts" / "vision_classifier.txt").read_text()
 
-_client = Groq(api_key=os.environ.get("GROQ_API_KEY", ""))
+_client = AsyncGroq(api_key=os.environ.get("GROQ_API_KEY", ""))
 
 
 async def _reverse_geocode(lat: float, lon: float) -> str:
@@ -60,7 +60,7 @@ async def classify(
     # We are falling back to a powerful text model and only passing the text description.
     # If vision is strictly required, you will need to switch back to Gemini or another vision provider.
     
-    response = _client.chat.completions.create(
+    response = await _client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[
             {"role": "system", "content": _prompt},
