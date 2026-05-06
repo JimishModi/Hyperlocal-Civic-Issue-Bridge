@@ -68,7 +68,7 @@ export default function Auth() {
         </div>
         
         <p className="text-[#0b1f3c] text-sm font-semibold mb-3">
-          © 2024 Civic Bridge. Official Government Partner.
+          © 2026 Civic Bridge.
         </p>
         
         <div className="flex items-center justify-center gap-4 text-sm text-slate-500 font-medium">
