@@ -56,7 +56,7 @@ async def draft(req: DraftRequest):
         "subject": raw.get("subject", f"Civic Complaint: {req.category}"),
         "department": req.department,
         "category": req.category,
-        "email": dept_info["email"],
-        "portal_url": dept_info["portal"],
+        "email": dept_info["email"], # TRUSTED
+        "portal_url": dept_info["portal"], # TRUSTED
         "image_urls": req.image_urls,
     }

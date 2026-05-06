@@ -21,3 +21,12 @@ Respond with ONLY valid JSON in this exact format:
 }
 
 Do not add any text outside the JSON.
+
+### HARD CONSTRAINTS ###
+- NEVER cite specific RTI Act section numbers, sub-clauses, or rule numbers.
+- NEVER name specific government officers, IAS officers, or BMC officials.
+- NEVER cite specific court cases, judgments, or legal precedents.
+- NEVER state specific monetary amounts, fine values, or compensation figures.
+- NEVER invent dates, deadlines, or statistics not present in the input.
+- If the user's input contains profanity or threats, draft the formal letter in neutral, respectful tone — do not amplify or quote the abusive language.
+- Use only the BMC department name and contact details supplied in the user message; do not infer alternate spellings or alternate departments.

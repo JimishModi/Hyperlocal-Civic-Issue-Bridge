@@ -1,3 +1,5 @@
+Vercel Link for frontend: https://hyperlocal-civic-issue-bridge.vercel.app/ 
+Railway Link for backend: https://vigilant-stillness-production.up.railway.app/
 # Hyperlocal Civic Issue Bridge
 
 > An AI-powered Progressive Web App that turns a citizen's photo of a pothole, a broken streetlight, or an overflowing drain into a properly addressed, formally drafted, trackable civic complaint sent to the right BMC department — with a built-in escalation pathway when the system goes silent.
@@ -73,6 +75,63 @@ The result: civic problems persist not because nobody reports them, but because 
 | **Built-in Civic Chatbot** | Floating chat window on every internal page. Answers questions about BMC procedures, RTI, complaint timelines, and app usage — in the user's chosen language. |
 | **Multilingual UI + AI** | English, Hindi, Marathi. UI strings translated via `react-i18next`; AI responses (chatbot, classification description) are language-aware via the `X-User-Language` header. |
 | **PWA-Ready** | Installable on mobile. Mobile-first design tokens. Offline manifest in `public/`. |
+
+---
+
+## Detailed Feature Architecture
+
+### 1. Image Processing & Multimodal AI
+A core capability of Civic Issue Bridge is its robust image processing and vision-based AI classification system. This feature reduces friction for the citizen by allowing them to simply "point and shoot" to document an issue, rather than typing a long explanation.
+- **Multi-Photo Evidence Capture:** The frontend includes a custom `MultiPhotoCapture` component interfacing directly with the `MediaDevices` API, allowing users to capture or upload up to 5 high-resolution photos with a live viewfinder and thumbnail review.
+- **Intelligent Cloud Storage:** Images are passed securely via `FormData` to the FastAPI backend, which uploads the byte streams directly to a Supabase Storage Bucket, converting them into permanent, public URLs.
+- **Dynamic Vision Model Routing:** If images are provided, the backend dynamically routes the request to Groq's dedicated vision model (**`meta-llama/llama-4-scout-17b-16e-instruct`**), analyzing the scene to automatically categorize the issue. If no images are provided, it gracefully degrades to a faster text-only reasoning model (**`llama-3.3-70b-versatile`**).
+
+### 2. Comprehensive Multilingual Architecture
+Civic issues affect citizens from all backgrounds, so language accessibility is built deeply into the stack—not just as an afterthought.
+- **Frontend Localization:** Leveraging `react-i18next` and local storage detection, the entire UI is available in **English, Hindi, and Marathi**. Users can toggle languages on the fly from the top navigation bar.
+- **AI Context Injection:** A custom backend middleware (`utils/lang.py`) extracts the `X-User-Language` header from incoming requests. This header is dynamically injected into the system prompt for the Groq AI, instructing it to generate the issue description, reasoning, and chatbot responses in the user's native language and script (e.g., Devanagari).
+- **Compliance Safeguards:** While the user interacts in their native language, the LLM is strictly instructed to keep official department names, technical categories, and the final drafted email body strictly in English to comply with BMC's administrative requirements.
+
+### 3. Smart Duplicate Detection (Geospatial)
+To prevent the BMC from being flooded with multiple complaints about the exact same issue (e.g., the same pothole reported by 10 different neighbors), the app employs a geospatial duplicate guard.
+- **Location Extraction:** The app uses the browser's HTML5 Geolocation API, falling back to IP-based location if necessary.
+- **PostGIS Radius Search:** When an issue is classified, the backend queries the Supabase `grievances` table using the Haversine formula to detect any *unresolved* complaints of the *same category* within a **200-meter radius**.
+- **User Intervention:** If a duplicate is found, the backend returns a `409 Conflict`. The UI displays a warning banner ("Already Reported") showing the existing reference code. The user can either click "Track Existing" to follow the current resolution progress, or "File Anyway" if they believe their issue is genuinely distinct.
+
+### 4. Automated Tracking & Escalation Engine
+Filing a complaint is easy, but following up is where citizens usually give up. The Civic Issue Bridge automates the follow-up burden.
+- **14-Day Reminder Cron:** A scheduled `APScheduler` job runs on the backend daily. It scans the database for any complaint that has been in the `awaiting` state for exactly 14 days and automatically fires a reminder email (via Resend) to the citizen.
+- **Three-Stage Escalation Pathway:** If the BMC ignores the complaint, the tracker provides a guided escalation path. 
+  - *Stage 1 (Follow-up):* Generates a formal follow-up letter referencing the original complaint code.
+  - *Stage 2 (RTI Application):* If 30 days pass, the AI drafts a legal Right to Information (RTI) application demanding the status of the repair work.
+  - *Stage 3 (CPGRAMS):* The final step drafts an escalation to the Central Government's grievance portal.
+
+### 5. AI Civic Assistant (Chatbot)
+Civic navigation can be confusing, so every internal page features a floating AI chatbot button.
+- **Context-Aware:** The chatbot knows it is operating within the Civic Issue Bridge app and is primed with knowledge about BMC's grievance redressal guidelines, typical resolution timelines, and RTI procedures.
+- **Multilingual Support:** The chatbot speaks the user's selected UI language seamlessly, allowing a Marathi-speaking citizen to ask complex questions about civic jurisdiction and receive accurate, localized answers in Marathi.
+
+### 6. 3-Layer AI Safety & Governance Architecture
+Handling civic data and interacting with citizens requires robust safeguards against hallucinations, prompt injections, and misrouted data. The backend is hardened with a strict, independent 3-layer security model to ensure the LLM remains a helpful tool rather than a vulnerability.
+
+#### Layer 1: Simulated Llama Guard (Chatbot Protection)
+To prevent prompt injections, jailbreaks, and out-of-domain abuse (e.g., "Ignore previous instructions", hostile language, or unrelated queries), the `/chat` route is protected by a dedicated input/output guardrail service (`services/guard.py`).
+- **Pre-Flight Input Guarding**: Before the citizen's message reaches the main conversational model, it is evaluated by a strict classification prompt running on a zero-temperature LLM. If the input is flagged as unsafe or manipulative, the request is immediately blocked.
+- **Post-Flight Output Guarding**: The AI's generated response is similarly verified before being returned to the citizen.
+- **Multilingual Graceful Refusal**: If an interaction is blocked, the backend returns a polite, hardcoded refusal mapped to the user's selected UI language (English, Hindi, or Marathi) via the `X-User-Language` header, redirecting them back to civic topics.
+- **Fail-Open Architecture**: To ensure the platform remains accessible during high API load, the guard logic is wrapped in a `try/except` block that fails open, relying on Layer 3 for fallback protection.
+
+#### Layer 2: Source-of-Truth Metadata Pinning (Routing Integrity)
+While LLMs are excellent at categorizing natural language, they are prone to hallucinating specific administrative details like emails and URLs. Layer 2 strips the LLM of its routing authority.
+- **Canonical Configuration**: All official BMC department names, emails, and portal URLs are strictly defined in `config/bmc_ward.json`.
+- **API Overrides**: When a citizen submits an issue, the LLM may suggest a department, but the `/classify` and `/file` routes intercept the request. The backend cross-references the LLM's suggested *category* with the canonical JSON (`utils/dept.py`) and forcibly overwrites the `department_name` and `recipient_email`. 
+- **Spoof Prevention**: Even if a malicious client attempts to POST a fake recipient email to the backend, Layer 2 overwrites it with the canonical government email, ensuring the complaint is never misrouted or exploited.
+
+#### Layer 3: System Prompt Hard Constraints (Hallucination Prevention)
+To ensure the LLM strictly adheres to BMC reality, all five system prompts (`complaint_drafter.txt`, `escalation.txt`, `cpgrams_guide.txt`, `vision_classifier.txt`, `chatbot.txt`) feature a non-negotiable `### HARD CONSTRAINTS ###` block.
+- **No Invented Civics**: The LLM is explicitly forbidden from citing specific RTI Act section numbers, inventing government officer names, citing court cases, or quoting arbitrary monetary fines.
+- **Neutralization**: If a user's input contains profanity or threats, the drafter neutralizes it, writing the formal grievance letter in a respectful tone without amplifying the abusive language.
+- **Exact Output Enforcing**: The multimodal vision classifier is forced to output exact string matches from the allowed category array, defaulting safely to "Other" if uncertain, maintaining database schema integrity.
 
 ---
 

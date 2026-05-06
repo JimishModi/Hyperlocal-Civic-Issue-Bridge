@@ -9,6 +9,7 @@ from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from db import get_db
 from utils.geo import find_nearby_duplicate
 from utils.lang import get_lang, lang_instruction
+from utils.dept import get_dept_info
 
 router = APIRouter()
 
@@ -139,9 +140,12 @@ async def classify(
         except Exception as e:
             print(f"Duplicate check error: {e}")
 
+    category = raw.get("category", "Other")
+    dept_info = get_dept_info(category)
+    
     return {
-        "category": raw.get("category", "Other"),
-        "department": raw.get("department", "BMC S-Ward Office"),
+        "category": category,
+        "department": dept_info["name"],
         "confidence": raw.get("confidence", 0.5),
         "description": raw.get("description_cleaned", description),
         "location": location_str,

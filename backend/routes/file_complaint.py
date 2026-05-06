@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from db import get_db
 from services.mailer import send_complaint_to_bmc
 from utils.geo import find_nearby_duplicate
+from utils.dept import get_dept_info
 
 router = APIRouter()
 
@@ -56,6 +57,11 @@ async def file_complaint(req: FileRequest):
 
     code = _generate_reference_code()
     subject = req.subject or f"Civic Complaint: {req.category} — {WARD}, Powai"
+
+    # LAYER 2: Enforce Canonical Metadata
+    dept_info = get_dept_info(req.category)
+    req.department = dept_info["name"] # TRUSTED
+    req.email = dept_info["email"]     # TRUSTED
 
     result = (
         db.table("grievances")

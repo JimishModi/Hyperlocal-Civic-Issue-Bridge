@@ -138,8 +138,8 @@ async def escalate(req: EscalateRequest):
     return {
         "body": raw.get("body", ""),
         "subject": raw.get("subject", f"Escalation: {req.type.upper()} — {req.reference_code}"),
-        "email": dept_info["email"],
-        "portal_url": dept_info["portal"],
+        "email": dept_info["email"], # TRUSTED
+        "portal_url": dept_info["portal"], # TRUSTED
         "escalation_path": req.type,
         "filing_steps": raw.get("filing_steps", []),
         "process_breakdown": {
