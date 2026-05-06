@@ -1,37 +1,42 @@
 import os
-import httpx
+import resend
 
-POSTMARK_TOKEN = os.environ.get("POSTMARK_API_KEY", "")
-POSTMARK_URL = "https://api.postmarkapp.com/email"
+resend.api_key = os.environ.get("RESEND_API_KEY", "")
 
-# Sender must be a verified Sender Signature in your Postmark account.
-# In test mode: add your own email at postmarkapp.com → Sender Signatures.
-FROM_ADDRESS = os.environ.get("POSTMARK_FROM_EMAIL", "civicbridge@example.com")
+FROM_ADDRESS = "onboarding@resend.dev"
+
+# Resend free tier restriction: can only deliver to your own verified email.
+# DEMO_INBOX redirects all outbound mail there so you can see it working live.
+# In production with a verified domain, remove this and use to_email directly.
+DEMO_INBOX = os.environ.get("DEMO_EMAIL", "")
 
 
 def _send(*, to: str, cc: str | None, subject: str, body: str) -> bool:
-    payload = {
-        "From": FROM_ADDRESS,
-        "To": to,
-        "Subject": subject,
-        "TextBody": body,
+    # In demo mode, deliver to your own inbox with a header showing real destination
+    actual_to = DEMO_INBOX if DEMO_INBOX else to
+    demo_note = (
+        f"[DEMO MODE — in production this email goes to: {to}]\n\n"
+        if DEMO_INBOX and DEMO_INBOX != to
+        else ""
+    )
+
+    params: resend.Emails.SendParams = {
+        "from": FROM_ADDRESS,
+        "to": [actual_to],
+        "subject": subject,
+        "text": demo_note + body,
     }
-    if cc:
-        payload["Cc"] = cc
+    if cc and cc != actual_to:
+        params["cc"] = [cc]
 
     try:
-        r = httpx.post(
-            POSTMARK_URL,
-            json=payload,
-            headers={
-                "Accept": "application/json",
-                "Content-Type": "application/json",
-                "X-Postmark-Server-Token": POSTMARK_TOKEN,
-            },
-            timeout=10,
-        )
-        return r.status_code == 200
-    except Exception:
+        email = resend.Emails.send(params)
+        # SDK v2 may return an object or dict — handle both
+        email_id = email.get("id") if isinstance(email, dict) else getattr(email, "id", None)
+        print(f"Resend sent OK — id: {email_id}, to: {actual_to}, subject: {params['subject']}")
+        return bool(email_id)
+    except Exception as e:
+        print(f"Resend ERROR: {e}")
         return False
 
 
