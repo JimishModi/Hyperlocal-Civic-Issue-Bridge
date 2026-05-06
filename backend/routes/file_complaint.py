@@ -80,13 +80,14 @@ async def file_complaint(req: FileRequest):
     if not result.data:
         raise HTTPException(status_code=500, detail="Failed to save complaint")
 
-    # Send email to BMC, CC citizen
+    # Send email to BMC, CC citizen — attach photo evidence
     email_sent = send_complaint_to_bmc(
         to_email=req.email,
         cc_email=req.user_email or None,
         subject=subject,
         body=req.body,
         reference_code=code,
+        image_urls=req.image_urls,
     )
 
     # Update email_sent_at if successful

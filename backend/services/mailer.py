@@ -1,4 +1,8 @@
+import base64
 import os
+from urllib.parse import urlparse
+
+import httpx
 import resend
 
 resend.api_key = os.environ.get("RESEND_API_KEY", "")
@@ -9,8 +13,47 @@ FROM_ADDRESS = os.environ.get("RESEND_FROM_EMAIL", "onboarding@resend.dev")
 # Set DEMO_EMAIL to your Resend account email so all outbound mail is redirected there.
 DEMO_INBOX = os.environ.get("DEMO_EMAIL", "")
 
+# Skip attachments larger than this (Resend hard limit is ~40 MB total per email)
+MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024  # 8 MB per file
 
-def _send(*, to: str, cc: str | None = None, subject: str, body: str) -> bool:
+
+def _fetch_attachments(image_urls: list[str]) -> list[dict]:
+    """Download each image URL and return Resend-compatible attachment dicts."""
+    attachments = []
+    for i, url in enumerate(image_urls):
+        if not url:
+            continue
+        try:
+            with httpx.Client(timeout=10.0, follow_redirects=True) as client:
+                r = client.get(url)
+                r.raise_for_status()
+            if len(r.content) > MAX_ATTACHMENT_BYTES:
+                print(f"Skipping attachment {url} — exceeds {MAX_ATTACHMENT_BYTES} bytes")
+                continue
+
+            # Derive filename from URL, fallback to evidence-N.<ext>
+            parsed = urlparse(url)
+            filename = os.path.basename(parsed.path) or f"evidence-{i + 1}.jpg"
+            if "." not in filename:
+                filename = f"{filename}.jpg"
+
+            attachments.append({
+                "filename": filename,
+                "content": base64.b64encode(r.content).decode("ascii"),
+            })
+        except Exception as e:
+            print(f"Failed to attach {url}: {e}")
+    return attachments
+
+
+def _send(
+    *,
+    to: str,
+    cc: str | None = None,
+    subject: str,
+    body: str,
+    attachments: list[dict] | None = None,
+) -> bool:
     # In demo mode, redirect all mail to your own inbox
     actual_to = DEMO_INBOX if DEMO_INBOX else to
     demo_note = (
@@ -31,11 +74,17 @@ def _send(*, to: str, cc: str | None = None, subject: str, body: str) -> bool:
     elif cc and DEMO_INBOX:
         params["text"] += f"\n\n[DEMO NOTE: The user requested a CC to {cc}, but CC is disabled in demo mode to prevent Resend delivery errors.]"
 
+    if attachments:
+        params["attachments"] = attachments
+
     try:
         email = resend.Emails.send(params)
         # SDK v2 may return an object or dict — handle both
         email_id = email.get("id") if isinstance(email, dict) else getattr(email, "id", None)
-        print(f"Resend sent OK — id: {email_id}, to: {actual_to}, subject: {subject}")
+        print(
+            f"Resend sent OK — id: {email_id}, to: {actual_to}, "
+            f"subject: {subject}, attachments: {len(attachments) if attachments else 0}"
+        )
         return bool(email_id)
     except Exception as e:
         print(f"Resend ERROR: {e}")
@@ -49,14 +98,31 @@ def send_complaint_to_bmc(
     subject: str,
     body: str,
     reference_code: str,
+    image_urls: list[str] | None = None,
 ) -> bool:
+    image_urls = image_urls or []
+    attachments = _fetch_attachments(image_urls)
+
+    photo_note = (
+        f"\n\n{len(attachments)} photo(s) of the issue are attached as evidence."
+        if attachments
+        else ""
+    )
+
     full_body = (
-        f"{body}\n\n"
+        f"{body}"
+        f"{photo_note}\n\n"
         f"---\n"
         f"Reference Code: {reference_code}\n"
         f"Filed via: Civic Issue Bridge\n"
     )
-    return _send(to=to_email, cc=cc_email, subject=subject, body=full_body)
+    return _send(
+        to=to_email,
+        cc=cc_email,
+        subject=subject,
+        body=full_body,
+        attachments=attachments,
+    )
 
 
 def send_followup_reminder(
