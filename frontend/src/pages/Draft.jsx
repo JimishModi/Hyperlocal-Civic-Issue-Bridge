@@ -207,11 +207,6 @@ export default function Draft() {
         >
           {emailClicked ? t('draft.emailOpened') : t('draft.fileByEmail')}
         </a>
-        {emailClicked && (
-          <p className="text-label-sm text-accent-slate -mt-1 text-center">
-            {t('draft.emailHint')}
-          </p>
-        )}
 
         {/* File on Portal */}
         <button
