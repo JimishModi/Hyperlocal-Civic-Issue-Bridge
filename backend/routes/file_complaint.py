@@ -73,7 +73,6 @@ async def file_complaint(req: FileRequest):
             "longitude": req.longitude,
             "image_url": req.image_urls[0] if req.image_urls else None,
             "filing_method": req.filing_method,
-            "image_urls": req.image_urls or None,
         })
         .execute()
     )

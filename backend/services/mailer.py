@@ -25,8 +25,11 @@ def _send(*, to: str, cc: str | None = None, subject: str, body: str) -> bool:
         "subject": subject,
         "text": demo_note + body,
     }
-    if cc and cc != actual_to:
+    # Only add CC if we are NOT in demo mode, otherwise Resend free tier rejects the entire email
+    if cc and not DEMO_INBOX:
         params["cc"] = [cc]
+    elif cc and DEMO_INBOX:
+        params["text"] += f"\n\n[DEMO NOTE: The user requested a CC to {cc}, but CC is disabled in demo mode to prevent Resend delivery errors.]"
 
     try:
         email = resend.Emails.send(params)
