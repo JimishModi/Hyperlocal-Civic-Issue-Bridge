@@ -27,6 +27,8 @@ export default function Draft() {
     )
   }
 
+  const hasFiled = emailClicked || portalClicked
+
   /* ── mailto link (opens user's email client) ── */
   const mailtoHref = `mailto:${draft.email || ''}?subject=${encodeURIComponent(draft.subject || 'Civic Complaint')}&body=${encodeURIComponent(body)}`
 
@@ -45,7 +47,6 @@ export default function Draft() {
     setError(null)
     setFiling(true)
 
-    // Determine filing method based on what the user clicked
     const filingMethod =
       emailClicked && portalClicked ? 'both'
       : emailClicked ? 'email'
@@ -182,64 +183,59 @@ export default function Draft() {
         />
       </div>
 
-      {/* ── STEP 1: How to file ── */}
-      <div className="mb-2">
-        <p className="text-label-bold text-on-surface mb-3">Step 1 — How would you like to file?</p>
-        <div className="flex flex-col gap-3">
+      {/* Filing options */}
+      <div className="flex flex-col gap-3 mb-6">
+        {/* Send by Email */}
+        <a
+          id="email-button"
+          href={mailtoHref}
+          onClick={handleEmailClick}
+          className={`text-center block no-underline px-4 py-3 rounded-xl font-semibold transition-all ${
+            emailClicked
+              ? 'bg-accent-green/10 border border-accent-green text-accent-green'
+              : 'btn-primary'
+          }`}
+        >
+          {emailClicked ? '✅  Email Opened — Send from your app' : '📧  File by Email'}
+        </a>
+        {emailClicked && (
+          <p className="text-label-sm text-accent-slate -mt-1 text-center">
+            Your email app should have opened with the complaint pre-filled.
+          </p>
+        )}
 
-          {/* Send by Email */}
-          <div>
-            <a
-              id="email-button"
-              href={mailtoHref}
-              onClick={handleEmailClick}
-              className="btn-primary text-center block no-underline"
-            >
-              {emailClicked ? '✅  Email Opened — Send it from your app' : '📧  File by Email'}
-            </a>
-            {emailClicked && (
-              <p className="text-label-sm text-accent-slate mt-1.5 text-center">
-                Your email app should have opened with the complaint pre-filled. Hit send from there.
-              </p>
-            )}
-          </div>
-
-          {/* File on Portal */}
-          <div>
-            <button
-              id="portal-button"
-              className={`w-full ${portalClicked ? 'btn-ghost border border-accent-green text-accent-green' : 'btn-ghost'}`}
-              onClick={handlePortal}
-            >
-              {portalClicked ? '✅  Portal Opened' : '🌐  File on BMC Portal'}
-            </button>
-            {portalClicked && (
-              <p className="text-label-sm text-accent-slate mt-1.5 text-center">
-                BMC's grievance portal has been opened in a new tab. Paste your complaint there.
-              </p>
-            )}
-          </div>
-        </div>
+        {/* File on Portal */}
+        <button
+          id="portal-button"
+          className={`w-full px-4 py-3 rounded-xl font-semibold transition-all ${
+            portalClicked
+              ? 'bg-accent-green/10 border border-accent-green text-accent-green'
+              : 'btn-ghost'
+          }`}
+          onClick={handlePortal}
+        >
+          {portalClicked ? '✅  BMC Portal Opened' : '🌐  File on BMC Portal'}
+        </button>
+        {portalClicked && (
+          <p className="text-label-sm text-accent-slate -mt-1 text-center">
+            Paste your complaint into the BMC grievance portal.
+          </p>
+        )}
       </div>
 
-      {/* Divider */}
-      <div className="flex items-center gap-3 my-5">
-        <div className="flex-1 h-px bg-outline-variant" />
-        <span className="text-label-sm text-accent-slate">then</span>
-        <div className="flex-1 h-px bg-outline-variant" />
-      </div>
-
-      {/* ── STEP 2: Save & Track ── */}
-      <div>
-        <p className="text-label-bold text-on-surface mb-1">Step 2 — Save & Track your complaint</p>
+      {/* Save & Track — only active after at least one filing method used */}
+      <div className={`rounded-xl p-4 transition-all ${hasFiled ? 'bg-surface-container' : 'bg-surface-container-low opacity-60'}`}>
+        <p className="text-label-bold text-on-surface mb-0.5">Save & Track</p>
         <p className="text-label-sm text-accent-slate mb-3">
-          Get a reference code, automatic 14-day follow-up, and escalation guidance if BMC doesn't respond.
+          {hasFiled
+            ? 'Get a reference code and 14-day follow-up reminder.'
+            : 'File by email or portal first to enable tracking.'}
         </p>
         <button
           id="file-button"
           className="btn-secondary w-full"
           onClick={() => handleFile()}
-          disabled={filing}
+          disabled={filing || !hasFiled}
         >
           {filing ? 'Saving…' : '🔖  Save & Track'}
         </button>
