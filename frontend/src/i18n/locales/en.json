@@ -68,7 +68,7 @@
     "emailPlaceholder": "you@example.com",
     "emailMissing": "Please enter your email — it's required to send you a copy and 14-day reminder.",
     "fileByEmail": "File by Email",
-    "emailOpened": "Email Opened — Send from your app",
+    "emailOpened": "Email Sent",
     "emailHint": "Your email app should have opened with the complaint pre-filled.",
     "fileOnPortal": "File on BMC Portal",
     "portalOpened": "BMC Portal Opened",
