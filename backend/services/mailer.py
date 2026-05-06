@@ -1,37 +1,28 @@
 import os
-import httpx
+import resend
 
-POSTMARK_TOKEN = os.environ.get("POSTMARK_API_KEY", "")
-POSTMARK_URL = "https://api.postmarkapp.com/email"
+resend.api_key = os.environ.get("RESEND_API_KEY", "")
 
-# Sender must be a verified Sender Signature in your Postmark account.
-# In test mode: add your own email at postmarkapp.com → Sender Signatures.
-FROM_ADDRESS = os.environ.get("POSTMARK_FROM_EMAIL", "civicbridge@example.com")
+# Using Resend's shared onboarding address — works immediately without domain verification.
+# To use your own domain, add it at resend.com/domains and update this value.
+FROM_ADDRESS = os.environ.get("RESEND_FROM_EMAIL", "onboarding@resend.dev")
 
 
 def _send(*, to: str, cc: str | None, subject: str, body: str) -> bool:
-    payload = {
-        "From": FROM_ADDRESS,
-        "To": to,
-        "Subject": subject,
-        "TextBody": body,
+    params: resend.Emails.SendParams = {
+        "from": FROM_ADDRESS,
+        "to": [to],
+        "subject": subject,
+        "text": body,
     }
     if cc:
-        payload["Cc"] = cc
+        params["cc"] = [cc]
 
     try:
-        r = httpx.post(
-            POSTMARK_URL,
-            json=payload,
-            headers={
-                "Accept": "application/json",
-                "Content-Type": "application/json",
-                "X-Postmark-Server-Token": POSTMARK_TOKEN,
-            },
-            timeout=10,
-        )
-        return r.status_code == 200
-    except Exception:
+        email = resend.Emails.send(params)
+        return bool(email.get("id"))
+    except Exception as e:
+        print(f"Resend error: {e}")
         return False
 
 
