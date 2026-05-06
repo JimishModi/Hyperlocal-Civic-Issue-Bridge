@@ -169,15 +169,16 @@ export default function Draft() {
         </div>
       )}
 
-      {/* Your email */}
+      {/* Your email — required */}
       <div className="mb-6">
         <label className="block text-label-bold text-on-surface mb-2">
-          Your Email <span className="text-accent-slate font-normal">(optional — receive a copy & 14-day reminder)</span>
+          Your Email <span className="text-error text-xs ml-1">*required</span>
         </label>
         <input
           className="input-field"
           type="email"
           placeholder="you@example.com"
+          required
           value={userEmail}
           onChange={e => setUserEmail(e.target.value)}
         />
@@ -196,7 +197,7 @@ export default function Draft() {
               : 'btn-primary'
           }`}
         >
-          {emailClicked ? '✅  Email Opened — Send from your app' : '📧  File by Email'}
+          {emailClicked ? '✅  Email Opened — Send from your app' : 'File by Email'}
         </a>
         {emailClicked && (
           <p className="text-label-sm text-accent-slate -mt-1 text-center">
@@ -214,7 +215,7 @@ export default function Draft() {
           }`}
           onClick={handlePortal}
         >
-          {portalClicked ? '✅  BMC Portal Opened' : '🌐  File on BMC Portal'}
+          {portalClicked ? '✅  BMC Portal Opened' : 'File on BMC Portal'}
         </button>
         {portalClicked && (
           <p className="text-label-sm text-accent-slate -mt-1 text-center">
@@ -228,7 +229,7 @@ export default function Draft() {
         <p className="text-label-bold text-on-surface mb-0.5">Save & Track</p>
         <p className="text-label-sm text-accent-slate mb-3">
           {hasFiled
-            ? 'Get a reference code and 14-day follow-up reminder.'
+            ? `Get a reference code and 14-day follow-up reminder${userEmail ? '' : ' — add your email above for a copy'}.`
             : 'File by email or portal first to enable tracking.'}
         </p>
         <button
@@ -237,7 +238,7 @@ export default function Draft() {
           onClick={() => handleFile()}
           disabled={filing || !hasFiled}
         >
-          {filing ? 'Saving…' : '🔖  Save & Track'}
+          {filing ? 'Saving…' : 'Save & Track'}
         </button>
       </div>
     </div>
