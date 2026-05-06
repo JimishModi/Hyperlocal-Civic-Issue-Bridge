@@ -6,6 +6,7 @@ import Draft from './pages/Draft.jsx'
 import Tracker from './pages/Tracker.jsx'
 import Escalation from './pages/Escalation.jsx'
 import Auth from './pages/Auth.jsx'
+import Dashboard from './pages/Dashboard.jsx'
 import ChatBot from './components/ChatBot.jsx'
 
 export default function App() {
@@ -22,6 +23,7 @@ export default function App() {
         <Route path="/draft" element={<Draft />} />
         <Route path="/tracker" element={<Tracker />} />
         <Route path="/escalation" element={<Escalation />} />
+        <Route path="/dashboard" element={<Dashboard />} />
       </Routes>
 
       {showChat && <ChatBot />}
