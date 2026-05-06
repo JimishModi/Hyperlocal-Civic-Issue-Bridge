@@ -45,6 +45,12 @@ export default function Draft() {
   /* ── Save & Track ── */
   const handleFile = async (force = false) => {
     setError(null)
+
+    if (!userEmail.trim()) {
+      setError('Please enter your email — it\'s required to send you a copy and 14-day reminder.')
+      return
+    }
+
     setFiling(true)
 
     const filingMethod =
