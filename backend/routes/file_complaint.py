@@ -30,7 +30,7 @@ class FileRequest(BaseModel):
     email: str           # BMC department email
     description: str = ""
     user_email: str = "" # citizen's email — for CC + 14-day reminder
-    image_url: str | None = None
+    image_urls: list[str] = []
     latitude: float | None = None
     longitude: float | None = None
     force: bool = False
@@ -71,7 +71,9 @@ async def file_complaint(req: FileRequest):
             "user_email": req.user_email or None,
             "latitude": req.latitude,
             "longitude": req.longitude,
+            "image_url": req.image_url,
             "filing_method": req.filing_method,
+            "image_urls": req.image_urls or None,
         })
         .execute()
     )

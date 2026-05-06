@@ -16,6 +16,9 @@ _prompt = (Path(__file__).parent.parent / "prompts" / "vision_classifier.txt").r
 
 _client = AsyncGroq(api_key=os.environ.get("GROQ_API_KEY", ""))
 
+_VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
+_TEXT_MODEL = "llama-3.3-70b-versatile"
+
 
 async def _reverse_geocode(lat: float, lon: float) -> str:
     """Return a precise street address for the given coordinates using Nominatim."""
@@ -43,7 +46,7 @@ async def _reverse_geocode(lat: float, lon: float) -> str:
 async def classify(
     request: Request,
     description: str = Form(""),
-    image: UploadFile | None = File(None),
+    images: list[UploadFile] = File(default=[]),
     latitude: float | None = Form(None),
     longitude: float | None = Form(None),
 ):
@@ -53,6 +56,28 @@ async def classify(
     else:
         location_str = "Powai, Mumbai (exact location not provided)"
 
+    # 1. Upload images first, collect public URLs
+    urls = []
+    if images:
+        try:
+            import uuid
+            db = get_db()
+            for img in images:
+                if not img.filename:
+                    continue
+                image_bytes = await img.read()
+                ext = img.filename.split('.')[-1] if '.' in img.filename else 'jpg'
+                filename = f"{uuid.uuid4()}.{ext}"
+                db.storage.from_("complaint_images").upload(
+                    path=filename,
+                    file=image_bytes,
+                    file_options={"content-type": img.content_type or "image/jpeg"}
+                )
+                urls.append(db.storage.from_("complaint_images").get_public_url(filename))
+        except Exception as e:
+            print(f"Error uploading image: {e}")
+
+    # 2. Prepare AI request — use vision model when images are present
     text_part = (
         f"Description: {description or '(no description)'}\n"
         f"Location: {location_str}\n\n"
@@ -68,18 +93,27 @@ async def classify(
             f"Keep 'category' and 'department' values in English exactly as specified."
         )
 
-    # Note: Groq recently decommissioned its vision models. 
-    # We are falling back to a powerful text model and only passing the text description.
-    # If vision is strictly required, you will need to switch back to Gemini or another vision provider.
-    
-    response = await _client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=[
-            {"role": "system", "content": _prompt + desc_lang_note},
-            {"role": "user", "content": text_part}
-        ],
-        temperature=0.1
-    )
+    if urls:
+        # Pass public image URLs directly to the vision model (up to 5)
+        user_content = [{"type": "text", "text": text_part}]
+        for u in urls[:5]:
+            user_content.append({"type": "image_url", "image_url": {"url": u}})
+        model = _VISION_MODEL
+    else:
+        user_content = text_part
+        model = _TEXT_MODEL
+
+    try:
+        response = await _client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": _prompt + desc_lang_note},
+                {"role": "user", "content": user_content}
+            ],
+            temperature=0.1
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail={"error_type": "AI_API_Error", "message": str(e)})
 
     try:
         response_text = response.choices[0].message.content
@@ -91,7 +125,7 @@ async def classify(
     except json.JSONDecodeError:
         raise HTTPException(status_code=500, detail="Classification service error")
 
-    # Duplicate check — same category + unresolved + within 200m
+    # 3. Duplicate check — same category + unresolved + within 200m
     duplicate = None
     if latitude and longitude:
         try:
@@ -105,31 +139,12 @@ async def classify(
         except Exception as e:
             print(f"Duplicate check error: {e}")
 
-    image_url = None
-    if image:
-        try:
-            import uuid
-            
-            image_bytes = await image.read()
-            db = get_db()
-            ext = image.filename.split('.')[-1] if image.filename and '.' in image.filename else 'jpg'
-            filename = f"{uuid.uuid4()}.{ext}"
-            
-            db.storage.from_("complaint_images").upload(
-                path=filename,
-                file=image_bytes,
-                file_options={"content-type": image.content_type or "image/jpeg"}
-            )
-            image_url = db.storage.from_("complaint_images").get_public_url(filename)
-        except Exception as e:
-            print(f"Error uploading image: {e}")
-
     return {
         "category": raw.get("category", "Other"),
         "department": raw.get("department", "BMC S-Ward Office"),
         "confidence": raw.get("confidence", 0.5),
         "description": raw.get("description_cleaned", description),
         "location": location_str,
-        "image_url": image_url,
+        "image_urls": urls,
         "duplicate": duplicate,
     }

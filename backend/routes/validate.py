@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 
 from groq import AsyncGroq
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Form, HTTPException
 
 router = APIRouter()
 
@@ -14,13 +14,15 @@ _client = AsyncGroq(api_key=os.environ.get("GROQ_API_KEY", ""))
 @router.post("/validate")
 async def validate(
     description: str = Form(""),
-    image: UploadFile | None = File(None),
+    images: list[UploadFile] = File(default=[]),
     latitude: float | None = Form(None),
     longitude: float | None = Form(None),
 ):
     user_content = f"User description: {description or '(no description provided)'}"
     if latitude and longitude:
         user_content += f"\nLocation: {latitude:.4f}, {longitude:.4f}"
+    if images:
+        user_content += f"\n[User uploaded {len(images)} photos as evidence. Do not reject simply due to missing description.]"
 
     response = await _client.chat.completions.create(
         model="llama-3.3-70b-versatile",

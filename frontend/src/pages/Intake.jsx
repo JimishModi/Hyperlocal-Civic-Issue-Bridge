@@ -4,18 +4,23 @@ import { useTranslation } from 'react-i18next'
 import { apiFetch } from '../config/api.js'
 import VoiceInput from '../components/VoiceInput.jsx'
 
-/* ── Inline camera component ── */
-function CameraCapture({ onCapture }) {
+const MAX_PHOTOS = 5
+
+/* ── Multi-photo capture component ── */
+function MultiPhotoCapture({ onCapture }) {
   const { t } = useTranslation()
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
   const streamRef = useRef(null)
   const fileRef = useRef(null)
-  const [mode, setMode] = useState('idle')
-  const [preview, setPreview] = useState(null)
+  const [cameraOpen, setCameraOpen] = useState(false)
   const [camError, setCamError] = useState(null)
+  const [photos, setPhotos] = useState([]) // [{file, url}]
+
+  const notify = (updated) => onCapture(updated.map(p => p.file))
 
   const startCamera = async () => {
+    if (photos.length >= 5) return;
     setCamError(null)
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -24,7 +29,7 @@ function CameraCapture({ onCapture }) {
       })
       streamRef.current = stream
       if (videoRef.current) videoRef.current.srcObject = stream
-      setMode('live')
+      setCameraOpen(true)
     } catch {
       setCamError(t('intake.cameraError'))
     }
@@ -33,6 +38,7 @@ function CameraCapture({ onCapture }) {
   const stopCamera = () => {
     streamRef.current?.getTracks().forEach(t => t.stop())
     streamRef.current = null
+    setCameraOpen(false)
   }
 
   const snap = () => {
@@ -43,72 +49,58 @@ function CameraCapture({ onCapture }) {
     canvas.height = video.videoHeight
     canvas.getContext('2d').drawImage(video, 0, 0)
     canvas.toBlob(blob => {
-      const file = new File([blob], 'issue-photo.jpg', { type: 'image/jpeg' })
+      const file = new File([blob], `issue-photo-${Date.now()}.jpg`, { type: 'image/jpeg' })
       const url = URL.createObjectURL(blob)
-      setPreview(url)
-      onCapture(file)
+      setPhotos(prev => {
+        const updated = [...prev, { file, url }]
+        notify(updated)
+        return updated
+      })
       stopCamera()
-      setMode('preview')
     }, 'image/jpeg', 0.92)
-  }
-
-  const retake = () => {
-    setPreview(null)
-    onCapture(null)
-    startCamera()
   }
 
   useEffect(() => () => stopCamera(), [])
 
-  const handleFile = (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    const url = URL.createObjectURL(file)
-    setPreview(url)
-    onCapture(file)
-    setMode('preview')
+  const handleFiles = (e) => {
+    const files = Array.from(e.target.files || [])
+    if (!files.length) return
+    const newEntries = files.slice(0, MAX_PHOTOS - photos.length).map(file => ({
+      file,
+      url: URL.createObjectURL(file),
+    }))
+    setPhotos(prev => {
+      const updated = [...prev, ...newEntries]
+      notify(updated)
+      return updated
+    })
+    e.target.value = ''
   }
+
+  const removePhoto = (idx) => {
+    setPhotos(prev => {
+      URL.revokeObjectURL(prev[idx].url)
+      const updated = prev.filter((_, i) => i !== idx)
+      notify(updated)
+      return updated
+    })
+  }
+
+  const canAdd = photos.length < MAX_PHOTOS
 
   return (
     <div className="mb-4">
-      <label className="block text-label-bold text-on-surface mb-2">{t('intake.photoLabel')}</label>
+      <label className="block text-label-bold text-on-surface mb-2">
+        {t('intake.photoLabel')} <span className="text-accent-slate font-normal text-xs ml-1">({photos.length}/{MAX_PHOTOS})</span>
+      </label>
 
-      {mode === 'idle' && (
-        <div className="card flex flex-col items-center justify-center gap-3 h-44 border-dashed border-2 border-outline-variant">
-          <button
-            type="button"
-            id="open-camera-btn"
-            onClick={startCamera}
-            className="btn-secondary flex items-center gap-2 px-5 py-2 text-sm"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            {t('intake.openCamera')}
-          </button>
-          <span className="text-accent-slate text-xs">{t('intake.or')}</span>
-          <button
-            type="button"
-            onClick={() => fileRef.current?.click()}
-            className="btn-ghost text-sm px-4 py-1"
-          >
-            {t('intake.chooseGallery')}
-          </button>
-          <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
-          {camError && (
-            <p className="text-xs text-error-container mt-1 text-center px-4">{camError}</p>
-          )}
-        </div>
-      )}
-
-      {mode === 'live' && (
-        <div className="relative rounded-xl overflow-hidden bg-black h-64">
+      {/* Camera viewfinder */}
+      {cameraOpen && (
+        <div className="relative rounded-xl overflow-hidden bg-black h-64 mb-3">
           <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
           <canvas ref={canvasRef} className="hidden" />
           <button
             type="button"
-            id="snap-btn"
             onClick={snap}
             className="absolute bottom-4 left-1/2 -translate-x-1/2 w-14 h-14 rounded-full bg-white border-4 border-primary-container shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"
             title="Take photo"
@@ -117,26 +109,55 @@ function CameraCapture({ onCapture }) {
           </button>
           <button
             type="button"
-            onClick={() => { stopCamera(); setMode('idle') }}
+            onClick={stopCamera}
             className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 flex items-center justify-center text-white text-sm"
           >✕</button>
         </div>
       )}
 
-      {mode === 'preview' && preview && (
-        <div className="relative rounded-xl overflow-hidden h-64">
-          <img src={preview} alt="Captured issue" className="w-full h-full object-cover" />
-          <button
-            type="button"
-            id="retake-btn"
-            onClick={retake}
-            className="absolute bottom-3 right-3 bg-black/60 text-white text-xs px-3 py-1.5 rounded-full flex items-center gap-1 hover:bg-black/80 transition-colors"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            {t('intake.retake')}
-          </button>
+      {/* Thumbnails grid */}
+      {photos.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-3">
+          {photos.map((p, idx) => (
+            <div key={idx} className="relative w-20 h-20 rounded-lg overflow-hidden border border-outline-variant">
+              <img src={p.url} alt={`Photo ${idx + 1}`} className="w-full h-full object-cover" />
+              <button
+                type="button"
+                onClick={() => removePhoto(idx)}
+                className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/60 flex items-center justify-center text-white text-xs hover:bg-black/80"
+              >✕</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Add photo controls */}
+      {canAdd && !cameraOpen && (
+        <div className={`card flex flex-col items-center justify-center gap-3 border-dashed border-2 border-outline-variant ${photos.length === 0 ? 'h-44' : 'h-28'}`}>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              id="open-camera-btn"
+              onClick={startCamera}
+              className="btn-secondary flex items-center gap-2 px-4 py-2 text-sm"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              {t('intake.openCamera')}
+            </button>
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              className="btn-ghost text-sm px-4 py-2"
+            >
+              {t('intake.chooseGallery')}
+            </button>
+          </div>
+          {photos.length === 0 && <span className="text-accent-slate text-xs">{t('intake.or')}</span>}
+          <input ref={fileRef} type="file" accept="image/*" multiple onChange={handleFiles} className="hidden" />
+          {camError && <p className="text-xs text-error-container text-center px-4">{camError}</p>}
         </div>
       )}
     </div>
@@ -148,15 +169,17 @@ export default function Intake() {
   const navigate = useNavigate()
   const { t } = useTranslation()
 
-  const [photo, setPhoto] = useState(null)
+  const [photos, setPhotos] = useState([])
   const [description, setDescription] = useState('')
   const [location, setLocation] = useState(null)
   const [locating, setLocating] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
+  const [duplicate, setDuplicate] = useState(null)
+  const [pendingResult, setPendingResult] = useState(null)
 
-  const handleCapture = useCallback((file) => {
-    setPhoto(file)
+  const handleCapture = useCallback((files) => {
+    setPhotos(files)
   }, [])
 
   /* ── GPS ── */
@@ -172,7 +195,7 @@ export default function Intake() {
         setLocating(false)
       },
       (err) => {
-        setError(t('intake.locationError', { message: err.message }))
+        setError(`${t('intake.locationError')}: ${err.message}`)
         setLocating(false)
       },
       { enableHighAccuracy: true, timeout: 10000 }
@@ -190,7 +213,7 @@ export default function Intake() {
     setSubmitting(true)
     try {
       const formData = new FormData()
-      if (photo) formData.append('image', photo)
+      photos.forEach(p => formData.append('images', p))
       formData.append('description', description)
       if (location) {
         formData.append('latitude', location.lat)
@@ -202,7 +225,7 @@ export default function Intake() {
 
       // Step 2: Classify
       const classifyData = new FormData()
-      if (photo) classifyData.append('image', photo)
+      photos.forEach(p => classifyData.append('images', p))
       classifyData.append('description', description)
       if (location) {
         classifyData.append('latitude', location.lat)
@@ -210,6 +233,11 @@ export default function Intake() {
       }
       const result = await apiFetch('/classify', { method: 'POST', body: classifyData })
 
+      if (result.duplicate) {
+        setDuplicate(result.duplicate)
+        setPendingResult(result)
+        return
+      }
       navigate('/result', { state: { classification: result, coords: location } })
     } catch (err) {
       setError(err.message)
@@ -222,12 +250,12 @@ export default function Intake() {
     <div className="page page-enter">
       <h1 className="text-h2 text-primary-container mb-6">{t('intake.title')}</h1>
 
-      {/* Camera / Photo */}
-      <CameraCapture onCapture={handleCapture} />
+      {/* Camera / Photos */}
+      <MultiPhotoCapture onCapture={handleCapture} />
 
       {/* Description + Voice */}
       <div className="mb-4">
-        <label className="block text-label-bold text-on-surface mb-2">{t('intake.describeLabel')}</label>
+        <label className="block text-label-bold text-on-surface mb-2">{t('intake.descLabel')}</label>
         <div className="relative">
           <textarea
             id="description-input"
@@ -254,9 +282,33 @@ export default function Intake() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
-          {locating ? t('intake.gettingLocation') : location ? `📍 ${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}` : t('intake.addGps')}
+          {locating ? t('intake.locating') : location ? `📍 ${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}` : t('intake.addGps')}
         </button>
       </div>
+
+      {/* Duplicate warning */}
+      {duplicate && (
+        <div className="mb-4 p-4 rounded-xl bg-amber-50 border border-amber-200">
+          <p className="text-label-bold text-amber-900 mb-1">{t('intake.duplicateTitle')}</p>
+          <p className="text-label-sm text-amber-800 mb-3">
+            {t('intake.duplicateDesc1')} <strong>{duplicate.reference_code}</strong> {t('intake.duplicateDesc2')} <strong>{t(`status.${duplicate.status}`, duplicate.status)}</strong>. {t('intake.duplicateDesc3')}
+          </p>
+          <div className="flex gap-2">
+            <button
+              className="btn-ghost text-sm py-1.5"
+              onClick={() => navigate('/tracker', { state: { reference_code: duplicate.reference_code } })}
+            >
+              {t('intake.trackExisting')}
+            </button>
+            <button
+              className="btn-secondary text-sm py-1.5"
+              onClick={() => navigate('/result', { state: { classification: pendingResult, coords: location } })}
+            >
+              {t('intake.fileAnyway')}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Error */}
       {error && (
@@ -270,9 +322,9 @@ export default function Intake() {
         id="submit-button"
         className="btn-secondary"
         onClick={handleSubmit}
-        disabled={submitting || (!photo && !description)}
+        disabled={submitting || (!photos.length && !description)}
       >
-        {submitting ? t('intake.analyzing') : t('intake.submit')}
+        {submitting ? t('intake.analyzing') : t('intake.submitBtn')}
       </button>
     </div>
   )

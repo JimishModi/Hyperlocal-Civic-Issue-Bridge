@@ -71,7 +71,7 @@ export default function Draft() {
           category: draft.category,
           email: draft.email,
           user_email: userEmail,
-          image_url: draft.image_url,
+          image_urls: draft.image_urls ?? [],
           latitude: coords?.lat ?? null,
           longitude: coords?.lng ?? null,
           force,
