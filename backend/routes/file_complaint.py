@@ -33,6 +33,7 @@ class FileRequest(BaseModel):
     image_url: str | None = None
     latitude: float | None = None
     longitude: float | None = None
+    force: bool = False
 
 
 def _generate_reference_code() -> str:
@@ -43,8 +44,8 @@ def _generate_reference_code() -> str:
 async def file_complaint(req: FileRequest):
     db = get_db()
 
-    # Final duplicate guard (handles race conditions or users bypassing the warning)
-    if req.latitude and req.longitude:
+    # Final duplicate guard — skipped if user explicitly chose to file anyway
+    if not req.force and req.latitude and req.longitude:
         dup = find_nearby_duplicate(db, req.category, req.latitude, req.longitude)
         if dup:
             raise HTTPException(

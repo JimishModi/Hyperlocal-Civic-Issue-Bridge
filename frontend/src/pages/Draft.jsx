@@ -34,7 +34,7 @@ export default function Draft() {
   }
 
   /* ── Save & Track ── */
-  const handleFile = async () => {
+  const handleFile = async (force = false) => {
     setError(null)
     setFiling(true)
     try {
@@ -50,6 +50,7 @@ export default function Draft() {
           image_url: draft.image_url,
           latitude: coords?.lat ?? null,
           longitude: coords?.lng ?? null,
+          force,
         }),
       })
       const code = result.reference_code
@@ -83,14 +84,23 @@ export default function Draft() {
         <div className="mb-4 p-4 rounded-xl bg-amber-50 border border-amber-200">
           <p className="text-label-bold text-amber-900 mb-1">Already Reported</p>
           <p className="text-label-sm text-amber-800 mb-3">
-            This issue is already filed (Ref: <strong>{duplicateRef}</strong>). Track it instead of filing again.
+            This issue is already filed (Ref: <strong>{duplicateRef}</strong>). Filing again won't speed things up — but you can if your issue is different.
           </p>
-          <button
-            className="btn-ghost text-sm py-1.5"
-            onClick={() => navigate('/tracker', { state: { reference_code: duplicateRef } })}
-          >
-            Track Existing →
-          </button>
+          <div className="flex gap-2">
+            <button
+              className="btn-ghost text-sm py-1.5"
+              onClick={() => navigate('/tracker', { state: { reference_code: duplicateRef } })}
+            >
+              Track Existing →
+            </button>
+            <button
+              className="btn-secondary text-sm py-1.5"
+              disabled={filing}
+              onClick={() => { setDuplicateRef(null); handleFile(true) }}
+            >
+              File Anyway
+            </button>
+          </div>
         </div>
       )}
 

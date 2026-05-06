@@ -4,7 +4,7 @@ import resend
 resend.api_key = os.environ.get("RESEND_API_KEY", "")
 
 # Using Resend's shared onboarding address — works immediately without domain verification.
-# To use your own domain, add it at resend.com/domains and update this value.
+# To use your own domain, add it at resend.com/domains and update RESEND_FROM_EMAIL.
 FROM_ADDRESS = os.environ.get("RESEND_FROM_EMAIL", "onboarding@resend.dev")
 
 
