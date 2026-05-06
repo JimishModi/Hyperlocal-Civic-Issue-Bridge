@@ -197,7 +197,7 @@ export default function Draft() {
               : 'btn-primary'
           }`}
         >
-          {emailClicked ? '✅  Email Opened — Send from your app' : 'File by Email'}
+          {emailClicked ? 'Email Opened — Send from your app' : 'File by Email'}
         </a>
         {emailClicked && (
           <p className="text-label-sm text-accent-slate -mt-1 text-center">
@@ -215,7 +215,7 @@ export default function Draft() {
           }`}
           onClick={handlePortal}
         >
-          {portalClicked ? '✅  BMC Portal Opened' : 'File on BMC Portal'}
+          {portalClicked ? 'BMC Portal Opened' : 'File on BMC Portal'}
         </button>
         {portalClicked && (
           <p className="text-label-sm text-accent-slate -mt-1 text-center">
