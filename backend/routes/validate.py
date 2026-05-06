@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 
 from groq import AsyncGroq
-from fastapi import APIRouter, Form, HTTPException
+from fastapi import APIRouter, Form, HTTPException, File, UploadFile
 
 router = APIRouter()
 

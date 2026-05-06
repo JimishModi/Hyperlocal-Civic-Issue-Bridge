@@ -26,10 +26,10 @@
   },
   "intake": {
     "title": "Report an Issue",
-    "photoLabel": "Photo",
-    "openCamera": "Open Camera",
+    "photoLabel": "Photos",
+    "openCamera": "Camera",
     "or": "or",
-    "chooseGallery": "Choose from gallery",
+    "chooseGallery": "Gallery",
     "cameraError": "Camera access denied. Use the file picker instead.",
     "retake": "Retake",
     "describeLabel": "Describe the issue",
@@ -38,8 +38,15 @@
     "gettingLocation": "Getting location…",
     "geoNotSupported": "Geolocation not supported by your browser.",
     "locationError": "Location error: {{message}}",
-    "submit": "Submit Report",
-    "analyzing": "Analyzing…"
+    "locating": "Getting location…",
+    "submitBtn": "Submit Report",
+    "analyzing": "Analyzing…",
+    "duplicateTitle": "Already Reported",
+    "duplicateDesc1": "A similar issue near this location was already filed (Ref:",
+    "duplicateDesc2": ") and is currently",
+    "duplicateDesc3": "Filing a duplicate won't speed things up.",
+    "trackExisting": "Track Existing",
+    "fileAnyway": "File Anyway"
   },
   "result": {
     "title": "Classification Result",
