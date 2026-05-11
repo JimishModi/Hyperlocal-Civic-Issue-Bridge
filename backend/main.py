@@ -14,16 +14,19 @@ from services import scheduler
 
 app = FastAPI(title="Civic Issue Bridge API")
 
+# Single source of truth — used by both the middleware AND the global 500 handler
+ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
+    "http://localhost:5175",
+    "https://hyperlocal-civic-issue-bridge.vercel.app",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:5174",
-        "http://127.0.0.1:5174",
-        "http://localhost:5175",
-        "https://hyperlocal-civic-issue-bridge.vercel.app",
-    ],
+    allow_origins=ALLOWED_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -61,7 +64,7 @@ async def global_exception_handler(request: Request, exc: Exception):
     # instead of getting a generic CORS error masking the true issue.
     origin = request.headers.get("origin")
     headers = {}
-    if origin in ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5174", "http://127.0.0.1:5174", "http://localhost:5175"]:
+    if origin in ALLOWED_ORIGINS:
         headers["Access-Control-Allow-Origin"] = origin
         headers["Access-Control-Allow-Credentials"] = "true"
 
